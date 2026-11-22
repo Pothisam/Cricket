@@ -1,0 +1,17 @@
+Model: "Indian Cricket Player Rigged" by numaan.k99
+Source: https://sketchfab.com/3d-models/indian-cricket-player-rigged-a1001b602e4f430bb9de68c24d9a4aa7
+License: CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+Changes: re-coloured kit textures, branding removed, animated procedurally.
+
+Model B: "Indian Cricket Player - Rigged" by numaan.k99 (CC-BY-4.0)
+  https://sketchfab.com/numaan.k99
+Batting animation data: "Virat Kohli Cricket Batting Animation - Low Poly" by bhagathartworks (CC-BY-4.0)
+  https://sketchfab.com/bhagathartworks  (only the motion data is used; the character mesh is not shown)
+Cricket bat: "Cricket Bat" by omkar.jawake (CC-BY-4.0)
+  https://sketchfab.com/omkar.jawake
+
+Stadium: "Narendra Modi Stadium | Low Poly | Game Ready" by kevin_k_5124 (CC-BY-4.0)
+  https://sketchfab.com/kevin_k_5124  (sponsor boards / logos are not drawn)
+
+Batsman (rigged player with bat attached and 16 batting clips): assets/models/batsman.glb
+  Player by numaan.k99, bat by omkar.jawake, reference batting motion by bhagathartworks (all CC-BY-4.0, Sketchfab).

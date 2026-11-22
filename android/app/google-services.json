@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "592739044483",
+    "project_id": "cricket-run-notification",
+    "storage_bucket": "cricket-run-notification.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592739044483:android:4c1ab78213052a7ae21fb6",
+        "android_client_info": {
+          "package_name": "com.pothi.cricket"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "592739044483-jrs8q4sk82v0eckg7699igneg2pdme6e.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pothi.cricket",
+            "certificate_hash": "89b83357c724122208f1078956c0ceb56a5b710d"
+          }
+        },
+        {
+          "client_id": "592739044483-t0m8vq01tqgelf35l910vdvnceej5cn1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtyf3O7Bi4UoPiyVT6DoqgnP9uvbUMzqI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "592739044483-t0m8vq01tqgelf35l910vdvnceej5cn1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

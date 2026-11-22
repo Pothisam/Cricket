@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Replay 3D</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #8fb8d8; overflow: hidden; touch-action: none; }
+  #lt { position: fixed; left: 4%; bottom: 14%; max-width: 80%; opacity: 0; transform: translateX(-24px); transition: opacity .4s, transform .4s; pointer-events: none;
+        background: linear-gradient(90deg, #0b2d6b, #1456b8); border-left: 6px solid #f2b705; color: #fff; padding: 6px 20px 8px 14px; font-family: system-ui, sans-serif; box-shadow: 0 4px 14px #0006; }
+  #lt.on { opacity: 1; transform: none; }
+  #lt small { display: block; font-size: clamp(10px, 2.2vmin, 14px); letter-spacing: .2em; color: #f2b705; font-weight: 700; }
+  #lt b { font-size: clamp(16px, 4.4vmin, 28px); font-weight: 700; }
+  #msg { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font: 14px system-ui, sans-serif; color: #16201b; }
+</style>
+<script type="importmap">{ "imports": { "three": "./three/three.module.js", "three/addons/": "./three/addons/" } }</script>
+</head>
+<body>
+<div id="msg">Loading 3D players…</div>
+<div id="lt"><small>NEW BATSMAN</small><b id="ltName"></b></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { Line2 } from 'three/addons/lines/Line2.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
+import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
+import { FieldingSystem, STUMPS, BOUNDARY, DEFAULT_FIELD } from './FieldingSystem.js';
+import { Director } from './Director.js';
+import { buildStands } from './Stands.js';
+
+const post = (o) => { try { Replay3D.postMessage(JSON.stringify(o)); } catch (_) { /* running outside the app */ } };
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x8fb8d8); scene.fog = new THREE.Fog(0x8fb8d8, 120, 320);
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.1, 600);
+const controls = new OrbitControls(camera, renderer.domElement); controls.enabled = false;
+scene.add(new THREE.HemisphereLight(0xffffff, 0x4a6b3a, 1.8));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(-30, 60, 20); sun.castShadow = true;
+Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, far: 150 }); sun.shadow.mapSize.set(1024, 1024); scene.add(sun);
+
+// ground, pitch, creases, rope
+const ground = new THREE.Mesh(new THREE.CircleGeometry(BOUNDARY + 15, 96), new THREE.MeshStandardMaterial({ color: 0x3f7a3a }));
+ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const pitch = new THREE.Mesh(new THREE.PlaneGeometry(3.05, 22.5), new THREE.MeshStandardMaterial({ color: 0xc8b07a }));
+pitch.rotation.x = -Math.PI / 2; pitch.position.set(0, 0.003, 9.81); pitch.receiveShadow = true; scene.add(pitch);
+const white = new THREE.MeshBasicMaterial({ color: 0xffffff });
+for (const z of [0.97, -0.25, 18.65, 19.87]) { const l = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.05), white); l.rotation.x = -Math.PI / 2; l.position.set(0, 0.006, z); scene.add(l); }
+const rope = new THREE.Mesh(new THREE.TorusGeometry(BOUNDARY, 0.06, 6, 160), new THREE.MeshStandardMaterial({ color: 0xffffff })); rope.rotation.x = Math.PI / 2; rope.position.y = 0.06; scene.add(rope);
+const stands = buildStands(scene);
+
+// stumps + bails (bails fly off; a bowled stump is knocked back)
+const stumpMat = new THREE.MeshStandardMaterial({ color: 0xf2e6c8 });
+const bails = {}, stumpMeshes = {};
+for (const [end, p] of Object.entries(STUMPS)) {
+  stumpMeshes[end] = [-0.11, 0, 0.11].map(x => { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.71), stumpMat); s.userData.home = new THREE.Vector3(x, 0.355, p.z); s.position.copy(s.userData.home); s.castShadow = true; scene.add(s); return s; });
+  bails[end] = [-0.055, 0.055].map(x => { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.11), stumpMat); b.rotation.z = Math.PI / 2; b.userData.home = new THREE.Vector3(x, 0.72, p.z); scene.add(b); return b; });
+}
+const stumpsApi = {
+  set(end, broken, dt, e) {
+    bails[end].forEach((b, i) => {
+      const h = b.userData.home; if (!broken) { b.position.copy(h); b.rotation.set(0, 0, Math.PI / 2); return; }
+      const u = Math.min(dt, 0.7), v = new THREE.Vector3(i ? 1.2 : -1.0, 2.6, -1.8);
+      b.position.set(h.x + v.x * u, Math.max(0.01, h.y + v.y * u - 4.9 * u * u), h.z + v.z * u); b.rotation.set(dt * 9, dt * 5, Math.PI / 2 + dt * 7);
+    });
+    stumpMeshes[end].forEach((s, i) => {
+      const h = s.userData.home, bowled = broken && e?.style === 'bowled', k = bowled ? Math.min(dt, 0.5) / 0.5 * (i === 1 ? 1.35 : 0.6) : 0;
+      s.position.set(h.x, h.y * Math.cos(k) + 0.01, h.z - Math.sin(k) * h.y); s.rotation.set(-k, 0, 0);
+    });
+  },
+};
+
+const loader = new GLTFLoader();
+let batting, fielding, fs, director;
+try {
+  [batting, fielding] = await Promise.all([loader.loadAsync('./batsman_with_bat_animated.glb'), loader.loadAsync('./fielder_keeper_animated.glb')]);
+  fs = new FieldingSystem({ scene, battingGltf: batting, fieldingGltf: fielding, field: [...DEFAULT_FIELD.filter(n => n !== 'Deep Cover'), 'Deep Cover', 'Deep Mid-Wicket'], stumps: stumpsApi });
+  director = new Director(fs, camera);
+} catch (e) { document.getElementById('msg').textContent = 'Could not load the 3D players.'; post({ type: 'error', message: String(e) }); throw e; }
+document.getElementById('msg').remove();
+
+// ---- scorecard ball -> FieldingSystem event ------------------------------------------------
+const clipMeta = batting.scene.userData.batting.clips;
+const shotNames = Object.keys(clipMeta).filter(n => clipMeta[n].contact);
+const azimuth = (n) => clipMeta[n].shotAzimuthDeg;
+function pickShot(b) {
+  if (b.result === 'bowled') return 'Drive_Cover';     // beaten on the drive, bowled through the gate
+  if (b.result === 'lbw') return 'Flick';              // played across the line, hit on the front pad
+  if (b.noShot) return 'Leave';
+  if (b.angle == null) return b.runs > 0 || b.boundary ? 'Drive_Straight' : 'Defence_Forward';
+  const aerial = b.loft === 'lofted' || b.loft === 'aerial' || b.boundary === 6;
+  const pool = shotNames.filter(n => aerial ? n.startsWith('Loft_') : !n.startsWith('Loft_') && !n.startsWith('Defence_'));
+  const diff = (n) => Math.abs((((azimuth(n) - b.angle) % 360) + 540) % 360 - 180);
+  let best = pool[0]; for (const n of pool) if (diff(n) < diff(best)) best = n;
+  return best;
+}
+function toEvent(b) {
+  const ev = { shot: pickShot(b), runs: b.runs ?? 0, result: b.result ?? 'runs', bowling: b.bowling ?? 'fast', seed: b.seed ?? 1 };
+  if (b.angle != null) ev.direction = b.angle;
+  if (b.boundary) ev.boundary = b.boundary;
+  if (b.runoutEnd) ev.runoutEnd = b.runoutEnd;
+  if (b.outBatsman) ev.outBatsman = b.outBatsman;
+  if (b.entry?.name) ev.entry = { name: b.entry.name };
+  if (b.fielder) ev.fielder = b.fielder;
+  if (b.distance) ev.distance = b.distance;
+  if (b.wide) ev.wide = (ev.seed % 2) ? 1.7 : -1.7;
+  if (ev.result === 'runs' && !ev.runs && !ev.boundary) ev.result = 'dot';
+  return ev;
+}
+
+// ---- ball trail: the flight path from the bowler's hand, drawn up to the ball's current position ----
+const trailMat = new LineMaterial({ color: 0xffe14d, linewidth: 0.07, worldUnits: true, transparent: true, opacity: 0.85 });
+let trail = null, trailTimes = [];
+function buildTrail(plan) {
+  if (trail) { scene.remove(trail); trail.geometry.dispose(); trail = null; }
+  const m = plan.meta, pts = [], times = [];
+  let tEnd = plan.duration;
+  for (const s of fs.path.segs) if (s.t0 >= m.tRel && (s.type === 'held' || s.type === 'rest')) tEnd = Math.min(tEnd, s.t0);
+  if (m.kind === 'six') tEnd = Math.min(tEnd, m.tLand);
+  for (let t = m.tRel; t < tEnd + 0.04 && pts.length < 1800; t += 0.04) { const p = fs.path.at(Math.min(t, tEnd)); if (p.y < -1) continue; pts.push(p.x, Math.max(p.y, 0.05), p.z); times.push(t); }
+  if (pts.length < 6) return;
+  const g = new LineGeometry(); g.setPositions(pts);
+  trail = new Line2(g, trailMat); trail.frustumCulled = false; trail.renderOrder = 5; scene.add(trail); trailTimes = times;
+}
+function updateTrail(tp) {
+  if (!trail) return;
+  let n = 0; while (n < trailTimes.length && trailTimes[n] <= tp) n++;
+  trail.visible = n >= 2; if (n >= 2) trail.geometry.instanceCount = n - 1;
+}
+
+// ---- playback -------------------------------------------------------------------------------
+let plan, u = 0, playing = false, rate = 1, freeCam = false, info = null, lastMode = 'live', doneSent = true;
+const api = {
+  // ball: see toEvent(). Plans the delivery, builds the camera sequence and reports the real playing time.
+  load(ball, opts = {}) {
+    plan = fs.planBall(toEvent(ball));
+    const seqInfo = director.build(plan); buildTrail(plan);
+    document.getElementById('ltName').textContent = plan.meta.entryName ?? ''; lt.classList.remove('on');
+    u = 0; rate = opts.rate ?? rate; playing = opts.autoplay ?? true; doneSent = false; lastMode = 'live';
+    post({ type: 'planned', start: 0, duration: seqInfo.total, reveal: seqInfo.reveal, fielder: plan.fielder, action: plan.action, kind: plan.meta.kind });
+  },
+  play() { playing = true; }, pause() { playing = false; },
+  setRate(r) { rate = r; },
+  seek(x) { u = Math.max(0, Math.min(x, director.total)); playing = false; },
+  setCamera(v) { freeCam = v === 'free'; controls.enabled = freeCam; if (freeCam) { camera.position.set(0, 14, 40); controls.target.set(0, 0, 8); controls.update(); } },
+  get info() { return plan ? { total: director.total, cuts: director.cuts.map(c => ({ shot: c.shot, mode: c.mode, rate: c.rate, t0: c.t0, t1: c.t1, real0: c.real0 })) } : null; },
+};
+window.Replay = api; window.__dbg = { fs, director, camera, THREE };
+trailMat.resolution.set(innerWidth, innerHeight);
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); trailMat.resolution.set(innerWidth, innerHeight); });
+
+const lt = document.getElementById('lt');
+const clock = new THREE.Clock(), tmpV = new THREE.Vector3();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (plan) {
+    if (playing) { u += dt * rate; if (u >= director.total) { u = director.total; if (!doneSent) { doneSent = true; post({ type: 'done' }); } } else doneSent = false; }
+    info = director.timeAt(u);
+    fs.update(info.tp);
+    if (freeCam) controls.update(); else director.apply(u, info);
+    stands.update(clock.elapsedTime, director.crowdAmp(info.tp));
+    updateTrail(info.tp);
+    // the ball is tiny: grow it with the distance so it stays trackable
+    fs.ball.scale.setScalar(THREE.MathUtils.clamp(camera.position.distanceTo(fs.ball.getWorldPosition(tmpV)) * 0.09, 1.6, 7));
+    lt.classList.toggle('on', !!info.cut.args.lowerThird && !!plan.meta.entryName);
+    if (info.cut.mode !== lastMode) { lastMode = info.cut.mode; post({ type: 'mode', mode: lastMode }); }
+  }
+  renderer.render(scene, camera);
+});
+camera.position.set(0, 14, 40); camera.lookAt(0, 0, 8);
+post({ type: 'ready' });
+</script>
+</body>
+</html>
