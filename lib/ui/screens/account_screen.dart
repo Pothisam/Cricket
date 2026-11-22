@@ -6,6 +6,7 @@ import '../../data/api/api_models.dart';
 import '../../data/api/cricket_api.dart';
 import '../../data/app_dependencies.dart';
 import '../../state/auth_controller.dart';
+import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 
 /// `GET/PATCH/DELETE /me`, `POST /feedback`, `GET /health`, `GET /config`.
@@ -29,6 +30,7 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _load() async {
+    setState(() => _error = null);
     try {
       final me = await _api.me();
       final cfg = await _api.config();
@@ -38,8 +40,8 @@ class _AccountScreenState extends State<AccountScreen> {
         _me = me;
         _status = 'Server ${ok ? 'online' : 'unreachable'} · min app ${cfg.minAppVersion}';
       });
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiMessage(e));
     }
   }
 
@@ -69,7 +71,9 @@ class _AccountScreenState extends State<AccountScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Account')),
       body: me == null
-          ? Center(child: _error != null ? Text(_error!) : const CircularProgressIndicator())
+          ? (_error != null
+              ? ErrorRetry(message: _error!, onRetry: _load)
+              : const Center(child: CircularProgressIndicator()))
           : ListView(children: [
               ListTile(
                 leading: CircleAvatar(

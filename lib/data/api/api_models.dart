@@ -219,3 +219,93 @@ class SyncPullResult {
   final List<String> deletedTeams, deletedPlayers, deletedMatches;
   final String serverTime;
 }
+
+/// The signed-in user's cricket profile (`GET/PUT /me/profile`).
+class PlayerProfile {
+  PlayerProfile({
+    this.userId = '',
+    this.playerId = '',
+    this.email,
+    this.phoneNumber,
+    this.photoUrl,
+    this.displayName = '',
+    this.gender,
+    this.dateOfBirth,
+    this.city,
+    this.isDiscoverable = true,
+    this.role = 'batter',
+    this.battingStyle = 'Right-hand bat',
+    this.bowlingStyle = 'None',
+    this.heightCm,
+    this.weightKg,
+    this.jerseyNumber,
+  });
+
+  String userId, playerId;
+  String? email, phoneNumber, photoUrl, gender, dateOfBirth, city;
+  String displayName;
+  bool isDiscoverable;
+  String role, battingStyle, bowlingStyle;
+  double? heightCm, weightKg;
+  int? jerseyNumber;
+
+  factory PlayerProfile.fromJson(Map<String, dynamic> j) => PlayerProfile(
+        userId: j['userId'] as String? ?? '',
+        playerId: j['playerId'] as String? ?? '',
+        email: j['email'] as String?,
+        phoneNumber: j['phoneNumber'] as String?,
+        photoUrl: j['photoUrl'] as String?,
+        displayName: j['displayName'] as String? ?? '',
+        gender: j['gender'] as String?,
+        dateOfBirth: j['dateOfBirth'] as String?,
+        city: j['city'] as String?,
+        isDiscoverable: j['isDiscoverable'] as bool? ?? true,
+        role: j['role'] as String? ?? 'batter',
+        battingStyle: j['battingStyle'] as String? ?? 'Right-hand bat',
+        bowlingStyle: j['bowlingStyle'] as String? ?? 'None',
+        heightCm: (j['heightCm'] as num?)?.toDouble(),
+        weightKg: (j['weightKg'] as num?)?.toDouble(),
+        jerseyNumber: (j['jerseyNumber'] as num?)?.toInt(),
+      );
+
+  /// Body of `PUT /me/profile` (the profile is replaced).
+  Map<String, dynamic> toJson() => {
+        'displayName': displayName,
+        'gender': gender,
+        'dateOfBirth': dateOfBirth,
+        'city': city,
+        'phoneNumber': phoneNumber,
+        'photoUrl': photoUrl,
+        'isDiscoverable': isDiscoverable,
+        'role': role,
+        'battingStyle': battingStyle,
+        'bowlingStyle': bowlingStyle,
+        'heightCm': heightCm,
+        'weightKg': weightKg,
+        'jerseyNumber': jerseyNumber,
+      };
+}
+
+/// One hit of `GET /players/search`.
+class PlayerSearchItem {
+  PlayerSearchItem.fromJson(Map<String, dynamic> j)
+      : source = j['source'] as String? ?? 'mine',
+        playerId = j['playerId'] as String?,
+        userId = j['userId'] as String?,
+        name = j['name'] as String? ?? '',
+        email = j['email'] as String?,
+        photoUrl = j['photoUrl'] as String?,
+        role = j['role'] as String? ?? 'batter',
+        battingStyle = j['battingStyle'] as String? ?? '',
+        bowlingStyle = j['bowlingStyle'] as String? ?? '',
+        city = j['city'] as String?,
+        isRegistered = j['isRegistered'] as bool? ?? false,
+        isSelf = j['isSelf'] as bool? ?? false;
+
+  /// `mine` = already in my player list, `user` = a registered user I can add.
+  final String source;
+  final String? playerId, userId, email, photoUrl, city;
+  final String name, role, battingStyle, bowlingStyle;
+  final bool isRegistered, isSelf;
+  bool get isMine => source == 'mine';
+}

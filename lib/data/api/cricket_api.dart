@@ -65,6 +65,24 @@ class CricketApi {
     sessionReady = false;
   }
 
+  // ------------------------------------------------------------- profile
+  Future<PlayerProfile> profile() async =>
+      PlayerProfile.fromJson(_map(await client.get('/me/profile')));
+
+  /// Replaces the profile. The server also updates the user's own player.
+  Future<PlayerProfile> saveProfile(PlayerProfile p) async =>
+      PlayerProfile.fromJson(_map(await client.put('/me/profile', body: p.toJson())));
+
+  /// Search my players (name / e-mail) and registered users (name, or exact e-mail).
+  Future<List<PlayerSearchItem>> searchPlayers(String q, {int limit = 20}) async => [
+        for (final j in _items(await client.get('/players/search', query: {'q': q, 'limit': '$limit'})))
+          PlayerSearchItem.fromJson(j)
+      ];
+
+  /// Adds a registered user to my player list (linked to that user).
+  Future<Player> addPlayerFromUser(String userId) async =>
+      Player.fromJson(_map(await client.post('/players/from-user', body: {'userId': userId})));
+
   // ------------------------------------------------------------- devices
   Future<void> registerToken(Json deviceInfo) => client.put('/devices/token', body: deviceInfo);
 

@@ -83,8 +83,9 @@ class SyncManager extends ChangeNotifier {
       lastError = null;
       notifyListeners();
       await syncAll();
-    } on ApiException catch (e) {
-      lastError = e.message;
+    } catch (e) {
+      lastError = e is ApiException ? e.message : 'Could not start the session: $e';
+      debugPrint('startSession failed: $e');
       _uid = null; // allow a retry on the next sign-in event / app start
       notifyListeners();
     }

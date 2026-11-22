@@ -5,6 +5,7 @@ import '../../data/api/api_client.dart';
 import '../../data/api/api_models.dart';
 import '../../data/api/cricket_api.dart';
 import '../../data/app_dependencies.dart';
+import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 
 IconData _iconFor(String type) => switch (type) {
@@ -58,8 +59,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _cursor = r.nextCursor;
         _unread = r.unreadCount;
       });
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -114,12 +115,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _body() {
     if (_items.isEmpty) {
+      if (_error != null && !_loading) {
+        return ErrorRetry(message: _error!, onRetry: () => _load(reset: true));
+      }
       return ListView(children: [
         const SizedBox(height: 120),
         Center(
           child: _loading
               ? const CircularProgressIndicator()
-              : Text(_error ?? (_unreadOnly ? 'No unread notifications' : 'No notifications yet')),
+              : Text(_unreadOnly ? 'No unread notifications' : 'No notifications yet'),
         ),
       ]);
     }
@@ -197,7 +201,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     _api.preferences().then((p) {
       if (mounted) setState(() => _p = p);
     }).catchError((Object e) {
-      if (mounted) setState(() => _error = e is ApiException ? e.message : '$e');
+      if (mounted) setState(() => _error = apiMessage(e));
     });
   }
 
@@ -229,7 +233,18 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     return Scaffold(
       appBar: AppBar(title: const Text('Notification settings')),
       body: p == null
-          ? Center(child: _error != null ? Text(_error!) : const CircularProgressIndicator())
+          ? (_error != null
+              ? ErrorRetry(
+                  message: _error!,
+                  onRetry: () {
+                    setState(() => _error = null);
+                    _api.preferences().then((v) {
+                      if (mounted) setState(() => _p = v);
+                    }).catchError((Object e) {
+                      if (mounted) setState(() => _error = apiMessage(e));
+                    });
+                  })
+              : const Center(child: CircularProgressIndicator()))
           : ListView(children: [
               _sw('New sign-in alerts', p.loginAlerts, (v) => p.loginAlerts = v),
               _sw('Match started', p.matchStart, (v) => p.matchStart = v),

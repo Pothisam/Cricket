@@ -6,6 +6,7 @@ import '../../data/api/api_models.dart';
 import '../../data/api/cricket_api.dart';
 import '../../data/app_dependencies.dart';
 import '../../models/cricket_match.dart';
+import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/scorecard_view.dart';
 
@@ -30,11 +31,12 @@ class _FollowingScreenState extends State<FollowingScreen> {
   }
 
   Future<void> _load() async {
+    setState(() => _error = null);
     try {
       final r = await _api.following();
       if (mounted) setState(() => _items = r);
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiMessage(e));
     }
   }
 
@@ -85,12 +87,14 @@ class _FollowingScreenState extends State<FollowingScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Enter code'),
       ),
-      body: RefreshIndicator(
+      body: _error != null && items == null
+          ? ErrorRetry(message: _error!, onRetry: _load)
+          : RefreshIndicator(
         onRefresh: _load,
         child: items == null
-            ? ListView(children: [
-                const SizedBox(height: 120),
-                Center(child: _error != null ? Text(_error!) : const CircularProgressIndicator()),
+            ? ListView(children: const [
+                SizedBox(height: 120),
+                Center(child: CircularProgressIndicator()),
               ])
             : items.isEmpty
                 ? ListView(children: const [

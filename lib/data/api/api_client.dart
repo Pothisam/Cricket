@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../../core/api_config.dart';
@@ -55,7 +56,7 @@ class ApiClient {
     };
     final uri = ApiConfig.uri(path, q.isEmpty ? null : q);
 
-    Future<http.Response> send({bool forceToken = false}) async {
+    Future<http.Response> attempt({bool forceToken = false}) async {
       final req = http.Request(method, uri)
         ..headers['Accept'] = 'application/json'
         ..headers['X-Device-Id'] = deviceId;
@@ -67,21 +68,30 @@ class ApiClient {
         final t = await _token(force: forceToken);
         if (t != null) req.headers['Authorization'] = 'Bearer $t';
       }
-      final streamed = await _http.send(req).timeout(ApiConfig.timeout);
+      final streamed = await _http.send(req);
       return http.Response.fromStream(streamed);
     }
+
+    // The timeout covers token fetch + request + body, so nothing can hang forever.
+    Future<http.Response> send({bool forceToken = false}) =>
+        attempt(forceToken: forceToken).timeout(ApiConfig.timeout);
 
     try {
       var res = await send();
       if (res.statusCode == 401 && auth) res = await send(forceToken: true);
+      if (res.statusCode >= 400) {
+        debugPrint('API $method $path -> ${res.statusCode} ${utf8.decode(res.bodyBytes)}');
+      }
       return _decode(res);
     } on ApiException {
       rethrow;
     } on TimeoutException {
+      debugPrint('API $method $path -> timeout');
       throw ApiException(0, 'NETWORK', 'The server did not respond in time');
     } on FirebaseAuthException catch (e) {
       throw ApiException(401, 'UNAUTHENTICATED', e.message ?? e.code);
     } catch (e) {
+      debugPrint('API $method $path -> $e');
       throw ApiException(0, 'NETWORK', 'Cannot reach the server');
     }
   }
@@ -99,6 +109,11 @@ class ApiClient {
     if (res.statusCode >= 200 && res.statusCode < 300) return json;
     final map = json is Map<String, dynamic> ? json : null;
     final err = map?['error'];
+    if (res.statusCode >= 500) {
+      throw ApiException(res.statusCode, 'SERVER_ERROR',
+          'Server error (${res.statusCode}). The server could not complete the request, please try again later.',
+          body: map);
+    }
     throw ApiException(
       res.statusCode,
       err is Map ? (err['code'] as String? ?? 'ERROR') : 'ERROR',

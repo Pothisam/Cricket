@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../data/app_dependencies.dart';
 import '../../state/matches_controller.dart';
 import '../../state/teams_controller.dart';
 import '../widgets/common.dart';
 import 'player_detail_screen.dart';
 import 'player_form.dart';
+import 'player_search_screen.dart';
 
 class PlayersTab extends StatefulWidget {
   const PlayersTab({super.key});
@@ -22,12 +24,31 @@ class _PlayersTabState extends State<PlayersTab> {
     final tc = context.watch<TeamsController>();
     final stats = context.watch<MatchesController>().stats;
     final players = tc.players
-        .where((p) => p.name.toLowerCase().contains(_query.toLowerCase()))
+        .where((p) {
+          final q = _query.toLowerCase();
+          return p.name.toLowerCase().contains(q) || (p.email ?? '').toLowerCase().contains(q);
+        })
         .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+      ..sort((a, b) {
+        if (a.isSelf != b.isSelf) return a.isSelf ? -1 : 1; // me first
+        return a.name.compareTo(b.name);
+      });
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Players')),
+      appBar: AppBar(
+        title: const Text('Players'),
+        actions: [
+          if (context.read<AppDependencies>().api != null)
+            IconButton(
+              tooltip: 'Find players',
+              icon: const Icon(Icons.person_search),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PlayerSearchScreen()),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: null,
         onPressed: () => showPlayerForm(context),
@@ -45,7 +66,7 @@ class _PlayersTabState extends State<PlayersTab> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                   child: SearchBar(
-                    hintText: 'Search players',
+                    hintText: 'Search by name or e-mail',
                     leading: const Icon(Icons.search),
                     elevation: const WidgetStatePropertyAll(0),
                     onChanged: (v) => setState(() => _query = v),
@@ -61,8 +82,22 @@ class _PlayersTabState extends State<PlayersTab> {
                       final teams = tc.teamsOfPlayer(p.id).map((t) => t.shortName).join(', ');
                       return ListTile(
                         leading: CircleAvatar(child: Text(p.name[0].toUpperCase())),
-                        title: Text(p.name),
-                        subtitle: Text([p.role.label, if (teams.isNotEmpty) teams].join(' · ')),
+                        title: Row(children: [
+                          Flexible(child: Text(p.isSelf ? '${p.name} (you)' : p.name)),
+                          if (p.isRegistered && !p.isSelf) ...[
+                            const SizedBox(width: 6),
+                            Tooltip(
+                              message: 'Registered user',
+                              child: Icon(Icons.verified_user_outlined,
+                                  size: 16, color: Theme.of(context).colorScheme.primary),
+                            ),
+                          ],
+                        ]),
+                        subtitle: Text([
+                          p.role.label,
+                          if (teams.isNotEmpty) teams,
+                          if (p.email?.isNotEmpty == true) p.email!,
+                        ].join(' · ')),
                         trailing: c == null
                             ? null
                             : Text('${c.runs} runs\n${c.wickets} wkts',

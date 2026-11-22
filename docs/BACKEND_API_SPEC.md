@@ -752,3 +752,34 @@ Followers receive the notifications in section 7.2 for matches they follow.
 6. Handle notification taps by reading `data.matchId` and opening that match.
 
 None of the app-side API calls exist yet. Once the backend is ready, the app work is a separate task.
+
+---
+
+## 14. User profile and player linking
+
+Implemented by `Database/CricketDB_Upgrade_001_UserProfile.sql` and the endpoints below.
+
+**Tables changed**
+
+| Table | New columns |
+|---|---|
+| `users` | `gender`, `date_of_birth`, `city`, `is_discoverable` |
+| `players` | `email`, `phone_number`, `gender`, `date_of_birth`, `height_cm`, `weight_kg`, `jersey_number`, `city`, `photo_url`, `linked_user_id` (FK `users`, NO ACTION), `is_self` |
+
+Indexes: `idx_players_email`, `idx_players_linked_user`, `ux_players_self` (one self player per user), `idx_players_name`, `idx_users_display_name`.
+
+**Endpoints**
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET / PUT | `/me/profile` | Own cricket profile; `PUT` also updates the user's own player |
+| GET | `/players/search?q=&limit=` | Own players (`source: "mine"`) + registered users (`source: "user"`) |
+| POST | `/players/from-user` | Add a registered user to my players (linked) |
+
+**Rules**
+
+1. First sign-in (`POST /auth/session`) creates the user and a player for them (`is_self = 1`, id `u_<uid>`).
+2. Players are matched to users by e-mail (case-insensitive). Saving a player whose e-mail belongs to a user links it; a new user is linked to every player that already has their e-mail.
+3. People who never signed in stay as plain players in the list of whoever added them.
+4. Search finds other users by name, or by their exact e-mail only (no partial e-mail matching, no enumeration). Their e-mail is masked in results. Height, weight, date of birth and phone are never shared with other users.
+5. The user's own player cannot be deleted; users can opt out of search with `isDiscoverable = false`.

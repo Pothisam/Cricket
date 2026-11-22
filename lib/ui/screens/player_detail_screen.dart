@@ -39,9 +39,10 @@ class PlayerDetailScreen extends StatelessWidget {
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => showPlayerForm(context, player: player),
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () async {
+            if (!player.isSelf)
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () async {
                 if (await confirm(context, 'Delete player?',
                     'The player is removed from all teams. Past scorecards keep their name.')) {
                   await tc.deletePlayer(player);

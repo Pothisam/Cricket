@@ -5,6 +5,7 @@ import '../../data/api/api_client.dart';
 import '../../data/api/api_models.dart';
 import '../../data/api/cricket_api.dart';
 import '../../data/app_dependencies.dart';
+import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 
 /// `GET /devices`, `PATCH /devices/{id}`, `DELETE /devices/{id}`.
@@ -27,11 +28,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Future<void> _load() async {
+    setState(() => _error = null);
     try {
       final d = await _api.devices();
       if (mounted) setState(() => _devices = d);
-    } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _error = apiMessage(e));
     }
   }
 
@@ -40,12 +42,14 @@ class _DevicesScreenState extends State<DevicesScreen> {
     final list = _devices;
     return Scaffold(
       appBar: AppBar(title: const Text('Signed-in devices')),
-      body: RefreshIndicator(
+      body: _error != null && list == null
+          ? ErrorRetry(message: _error!, onRetry: _load)
+          : RefreshIndicator(
         onRefresh: _load,
         child: list == null
-            ? ListView(children: [
-                const SizedBox(height: 120),
-                Center(child: _error != null ? Text(_error!) : const CircularProgressIndicator()),
+            ? ListView(children: const [
+                SizedBox(height: 120),
+                Center(child: CircularProgressIndicator()),
               ])
             : ListView(
                 children: [

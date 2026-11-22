@@ -13,6 +13,7 @@ import 'account_screen.dart';
 import 'devices_screen.dart';
 import 'following_screen.dart';
 import 'notifications_screen.dart';
+import 'profile_screen.dart';
 
 class MoreTab extends StatelessWidget {
   const MoreTab({super.key});
@@ -25,6 +26,12 @@ class MoreTab extends StatelessWidget {
         children: [
           const SectionHeader('ACCOUNT'),
           if (context.read<AppDependencies>().api != null) ...[
+            ListTile(
+              leading: const Icon(Icons.sports_cricket_outlined),
+              title: const Text('My cricket profile'),
+              subtitle: const Text('Role, batting, bowling, height, weight'),
+              onTap: () => _open(context, const ProfileScreen()),
+            ),
             ListTile(
               leading: const Icon(Icons.account_circle_outlined),
               title: const Text('My account'),

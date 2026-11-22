@@ -4,7 +4,7 @@
 class ApiConfig {
   static const String host = 'https://www.saras.ind.in/CricketAPI';
   static const String baseUrl = '$host/api/v1';
-  static const Duration timeout = Duration(seconds: 20);
+  static const Duration timeout = Duration(seconds: 40);
 
   static Uri uri(String path, [Map<String, String>? query]) =>
       Uri.parse('$baseUrl$path').replace(queryParameters: query);
