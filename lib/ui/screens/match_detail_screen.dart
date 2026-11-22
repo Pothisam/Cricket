@@ -8,6 +8,7 @@ import '../../data/app_dependencies.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/scorecard_view.dart';
+import '../widgets/pull_refresh.dart';
 import 'match_replay_screen.dart';
 import 'scoring_screen.dart';
 
@@ -36,18 +37,24 @@ class MatchDetailScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: () async {
-                if (await confirm(context, 'Delete match?', 'This removes the match and its statistics.')) {
+                if (await confirm(
+                  context,
+                  'Delete match?',
+                  'This removes the match and its statistics.',
+                )) {
                   await mc.delete(m);
                   if (context.mounted) Navigator.pop(context);
                 }
               },
             ),
           ],
-          bottom: const TabBar(tabs: [
-            Tab(text: 'Summary'),
-            Tab(text: 'Scorecard'),
-            Tab(text: 'Overs'),
-          ]),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Summary'),
+              Tab(text: 'Scorecard'),
+              Tab(text: 'Overs'),
+            ],
+          ),
         ),
         bottomNavigationBar: SafeArea(
           child: Padding(
@@ -57,10 +64,14 @@ class MatchDetailScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.edit_note),
-                    label: Text(m.isLive ? 'Continue scoring' : 'Edit scorecard'),
+                    label: Text(
+                      m.isLive ? 'Continue scoring' : 'Edit scorecard',
+                    ),
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => ScoringScreen(matchId: m.id)),
+                      MaterialPageRoute(
+                        builder: (_) => ScoringScreen(matchId: m.id),
+                      ),
                     ),
                   ),
                 ),
@@ -72,23 +83,40 @@ class MatchDetailScreen extends StatelessWidget {
                     onPressed: m.innings.every((i) => i.balls.isEmpty)
                         ? null
                         : () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => MatchReplayScreen(matchId: m.id)),
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => MatchReplayScreen(matchId: m.id),
                             ),
+                          ),
                   ),
                 ),
               ],
             ),
           ),
         ),
-        body: TabBarView(children: [
-          _Summary(match: m),
-          ListView(children: [
-            if (m.innings.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('Match has not started')),
-            for (final i in m.innings) ScorecardView(match: m, innings: i),
-          ]),
-          ListView(children: [for (final i in m.innings) OversView(match: m, innings: i)]),
-        ]),
+        body: PullToRefresh(
+          child: TabBarView(
+            children: [
+              _Summary(match: m),
+              ListView(
+                children: [
+                  if (m.innings.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text('Match has not started'),
+                    ),
+                  for (final i in m.innings)
+                    ScorecardView(match: m, innings: i),
+                ],
+              ),
+              ListView(
+                children: [
+                  for (final i in m.innings) OversView(match: m, innings: i),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -117,21 +145,31 @@ class _Summary extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text(match.teamName(i.battingTeamId),
-                              style: Theme.of(context).textTheme.titleMedium),
+                          child: Text(
+                            match.teamName(i.battingTeamId),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                         ),
-                        Builder(builder: (_) {
-                          final s = InningsSummary(match, i);
-                          return Text('${s.score}  (${s.oversString})',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold));
-                        }),
+                        Builder(
+                          builder: (_) {
+                            final s = InningsSummary(match, i);
+                            return Text(
+                              '${s.score}  (${s.oversString})',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
                 const Divider(),
                 Text(
                   match.isLive ? 'Match in progress' : match.resultText,
-                  style: TextStyle(fontWeight: FontWeight.bold, color: cs.onPrimaryContainer),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: cs.onPrimaryContainer,
+                  ),
                 ),
               ],
             ),
@@ -149,7 +187,9 @@ class _Summary extends StatelessWidget {
           ),
         ),
         for (final i in match.innings) ...[
-          SectionHeader('TOP PERFORMERS · ${match.teamShort(i.battingTeamId)} INNINGS'),
+          SectionHeader(
+            'TOP PERFORMERS · ${match.teamShort(i.battingTeamId)} INNINGS',
+          ),
           _performers(context, InningsSummary(match, i)),
         ],
         const SizedBox(height: 24),
@@ -158,17 +198,18 @@ class _Summary extends StatelessWidget {
   }
 
   Widget _info(String k, String v) => ListTile(
-        dense: true,
-        title: Text(k),
-        trailing: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 220),
-          child: Text(v, textAlign: TextAlign.right),
-        ),
-      );
+    dense: true,
+    title: Text(k),
+    trailing: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Text(v, textAlign: TextAlign.right),
+    ),
+  );
 
   Widget _performers(BuildContext context, InningsSummary s) {
     final bats = [...s.batters]..sort((a, b) => b.runs.compareTo(a.runs));
-    final bowls = [...s.bowlers]..sort((a, b) {
+    final bowls = [...s.bowlers]
+      ..sort((a, b) {
         final c = b.wickets.compareTo(a.wickets);
         return c != 0 ? c : a.runs.compareTo(b.runs);
       });
@@ -180,16 +221,20 @@ class _Summary extends StatelessWidget {
               dense: true,
               leading: const Icon(Icons.sports_cricket, size: 20),
               title: Text(b.name),
-              trailing: Text('${b.runs}${b.out ? '' : '*'} (${b.balls})',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: Text(
+                '${b.runs}${b.out ? '' : '*'} (${b.balls})',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           for (final b in bowls.take(2))
             ListTile(
               dense: true,
               leading: const Icon(Icons.sports_baseball, size: 20),
               title: Text(b.name),
-              trailing: Text('${b.wickets}/${b.runs} (${b.overs})',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: Text(
+                '${b.wickets}/${b.runs} (${b.overs})',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
         ],
       ),

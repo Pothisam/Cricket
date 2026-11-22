@@ -17,7 +17,12 @@ enum KitLook { batting, fielding, keeper, umpire }
 
 /// How one character differs from the shared base model.
 class HeroStyle {
-  const HeroStyle({this.kit = KitLook.fielding, this.model = 0, this.skin = (1.0, 1.0, 1.0), this.hair = 0});
+  const HeroStyle({
+    this.kit = KitLook.fielding,
+    this.model = 0,
+    this.skin = (1.0, 1.0, 1.0),
+    this.hair = 0,
+  });
   final KitLook kit;
 
   /// Which loaded character model to use.
@@ -35,36 +40,59 @@ class HeroStyle {
 // ---------------------------------------------------------------------------------------
 
 List<double> quatToMat(double x, double y, double z, double w) => [
-      1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w),
-      2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w),
-      2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y),
-    ];
+  1 - 2 * (y * y + z * z),
+  2 * (x * y - z * w),
+  2 * (x * z + y * w),
+  2 * (x * y + z * w),
+  1 - 2 * (x * x + z * z),
+  2 * (y * z - x * w),
+  2 * (x * z - y * w),
+  2 * (y * z + x * w),
+  1 - 2 * (x * x + y * y),
+];
 
 List<double> _mul(List<double> a, List<double> b) {
   final o = List<double>.filled(9, 0);
   for (var i = 0; i < 3; i++) {
     for (var j = 0; j < 3; j++) {
-      o[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+      o[i * 3 + j] =
+          a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
     }
   }
   return o;
 }
 
-List<double> _transpose(List<double> a) => [a[0], a[3], a[6], a[1], a[4], a[7], a[2], a[5], a[8]];
+List<double> _transpose(List<double> a) => [
+  a[0],
+  a[3],
+  a[6],
+  a[1],
+  a[4],
+  a[7],
+  a[2],
+  a[5],
+  a[8],
+];
 
 V3 _mulV(List<double> a, V3 v) => V3(
-      a[0] * v.x + a[1] * v.y + a[2] * v.z,
-      a[3] * v.x + a[4] * v.y + a[5] * v.z,
-      a[6] * v.x + a[7] * v.y + a[8] * v.z,
-    );
+  a[0] * v.x + a[1] * v.y + a[2] * v.z,
+  a[3] * v.x + a[4] * v.y + a[5] * v.z,
+  a[6] * v.x + a[7] * v.y + a[8] * v.z,
+);
 
 List<double> _axisAngle(V3 axis, double angle) {
   final a = axis.unit;
   final c = math.cos(angle), s = math.sin(angle), t = 1 - c;
   return [
-    t * a.x * a.x + c, t * a.x * a.y - s * a.z, t * a.x * a.z + s * a.y,
-    t * a.x * a.y + s * a.z, t * a.y * a.y + c, t * a.y * a.z - s * a.x,
-    t * a.x * a.z - s * a.y, t * a.y * a.z + s * a.x, t * a.z * a.z + c,
+    t * a.x * a.x + c,
+    t * a.x * a.y - s * a.z,
+    t * a.x * a.z + s * a.y,
+    t * a.x * a.y + s * a.z,
+    t * a.y * a.y + c,
+    t * a.y * a.z - s * a.x,
+    t * a.x * a.z - s * a.y,
+    t * a.y * a.z + s * a.x,
+    t * a.z * a.z + c,
   ];
 }
 
@@ -73,7 +101,16 @@ List<double> _axisAngle(V3 axis, double angle) {
 // ---------------------------------------------------------------------------------------
 
 class GlbPrim {
-  GlbPrim(this.name, this.matIndex, this.pos, this.nor, this.uv, this.joints, this.weights, this.indices) {
+  GlbPrim(
+    this.name,
+    this.matIndex,
+    this.pos,
+    this.nor,
+    this.uv,
+    this.joints,
+    this.weights,
+    this.indices,
+  ) {
     _buildLods();
   }
 
@@ -87,7 +124,11 @@ class GlbPrim {
   // Atlas routing (filled in when the atlas is built).
   int cell = 0;
   int? swatch;
-  bool kitTop = false, kitBottom = false, isHair = false, tintable = false, hidden = false;
+  bool kitTop = false,
+      kitBottom = false,
+      isHair = false,
+      tintable = false,
+      hidden = false;
 
   /// Index / vertex lists for detail levels 0 (full), 1 and 2 (merged vertices).
   late final List<Uint32List> lodIndices;
@@ -101,16 +142,25 @@ class GlbPrim {
       final rep = List<int>.filled(n, -1);
       final seen = <String, int>{};
       for (var v = 0; v < n; v++) {
-        final key = '${(pos[v * 3] / size).floor()},${(pos[v * 3 + 1] / size).floor()},${(pos[v * 3 + 2] / size).floor()}';
+        final key =
+            '${(pos[v * 3] / size).floor()},${(pos[v * 3 + 1] / size).floor()},${(pos[v * 3 + 2] / size).floor()}';
         rep[v] = seen.putIfAbsent(key, () => v);
       }
       final tris = <int>[];
       final used = <int>{};
       for (var i = 0; i + 2 < indices.length; i += 3) {
-        final a = rep[indices[i]], b = rep[indices[i + 1]], c = rep[indices[i + 2]];
+        final a = rep[indices[i]],
+            b = rep[indices[i + 1]],
+            c = rep[indices[i + 2]];
         if (a == b || b == c || a == c) continue;
-        tris..add(a)..add(b)..add(c);
-        used..add(a)..add(b)..add(c);
+        tris
+          ..add(a)
+          ..add(b)
+          ..add(c);
+        used
+          ..add(a)
+          ..add(b)
+          ..add(c);
       }
       lodIndices.add(Uint32List.fromList(tris));
       lodVerts.add(Int32List.fromList(used.toList()));
@@ -142,7 +192,18 @@ class GlbAnim {
 }
 
 class GlbModel {
-  GlbModel._(this.nodes, this.jointNodes, this.ibm, this.prims, this.atlas, this.byName, this.roots, this.anims, this.swatchHairBase, this.batting);
+  GlbModel._(
+    this.nodes,
+    this.jointNodes,
+    this.ibm,
+    this.prims,
+    this.atlas,
+    this.byName,
+    this.roots,
+    this.anims,
+    this.swatchHairBase,
+    this.batting,
+  );
 
   /// Cell size of the atlas, in pixels.
   static const cell = 512;
@@ -183,7 +244,11 @@ class GlbModel {
   ///
   /// [neutralizeRoot] removes the file's Y-up export rotation on the root nodes, so
   /// the skeleton uses the same Z-up, facing -Y, left = +X frame as the other models.
-  static Future<GlbModel> load(String asset, {bool atlas = true, bool neutralizeRoot = false}) async {
+  static Future<GlbModel> load(
+    String asset, {
+    bool atlas = true,
+    bool neutralizeRoot = false,
+  }) async {
     final g = await readGlb(asset);
     final j = g.json;
     final acc = AccessorReader(j, g.bin);
@@ -200,13 +265,28 @@ class GlbModel {
     final byName = <String, int>{};
     for (var i = 0; i < rawNodes.length; i++) {
       final n = rawNodes[i] as Map<String, dynamic>;
-      final t = ((n['translation'] as List?) ?? const [0, 0, 0]).map((e) => (e as num).toDouble()).toList();
-      final q = ((n['rotation'] as List?) ?? const [0, 0, 0, 1]).map((e) => (e as num).toDouble()).toList();
+      final t = ((n['translation'] as List?) ?? const [0, 0, 0])
+          .map((e) => (e as num).toDouble())
+          .toList();
+      final q = ((n['rotation'] as List?) ?? const [0, 0, 0, 1])
+          .map((e) => (e as num).toDouble())
+          .toList();
       final name = (n['name'] as String?) ?? 'node$i';
-      nodes.add(GlbNode(name, parents[i], ((n['children'] as List?) ?? const []).cast<int>(), t, quatToMat(q[0], q[1], q[2], q[3])));
+      nodes.add(
+        GlbNode(
+          name,
+          parents[i],
+          ((n['children'] as List?) ?? const []).cast<int>(),
+          t,
+          quatToMat(q[0], q[1], q[2], q[3]),
+        ),
+      );
       byName.putIfAbsent(name, () => i);
     }
-    final roots = [for (var i = 0; i < nodes.length; i++) if (nodes[i].parent < 0) i];
+    final roots = [
+      for (var i = 0; i < nodes.length; i++)
+        if (nodes[i].parent < 0) i,
+    ];
     if (neutralizeRoot) {
       // Root chain rotations (-90, +90, -90 about X) multiply to a single Y-up conversion;
       // dropping the first one leaves the skeleton in its own Z-up frame.
@@ -223,7 +303,11 @@ class GlbModel {
       jointNodes.addAll((skin['joints'] as List).cast<int>());
       final ibmAcc = acc.read(skin['inverseBindMatrices'] as int);
       for (var k = 0; k < jointNodes.length; k++) {
-        ibm.add(Float32List.fromList([for (var c = 0; c < 16; c++) ibmAcc[k * 16 + c].toDouble()]));
+        ibm.add(
+          Float32List.fromList([
+            for (var c = 0; c < 16; c++) ibmAcc[k * 16 + c].toDouble(),
+          ]),
+        );
       }
     }
 
@@ -237,17 +321,27 @@ class GlbModel {
           if (attrs['JOINTS_0'] == null) continue;
           final mi = p['material'] as int;
           final mat = (j['materials'] as List)[mi] as Map<String, dynamic>;
-          Float32List f32(List<num> l) => Float32List.fromList(l.map((e) => e.toDouble()).toList());
-          prims.add(GlbPrim(
-            (mat['name'] as String?) ?? 'mat$mi',
-            mi,
-            f32(acc.read(attrs['POSITION'] as int)),
-            f32(acc.read(attrs['NORMAL'] as int)),
-            f32(acc.read(attrs['TEXCOORD_0'] as int)),
-            Uint16List.fromList(acc.read(attrs['JOINTS_0'] as int).map((e) => e.toInt()).toList()),
-            f32(acc.read(attrs['WEIGHTS_0'] as int)),
-            Uint32List.fromList(acc.read(p['indices'] as int).map((e) => e.toInt()).toList()),
-          ));
+          Float32List f32(List<num> l) =>
+              Float32List.fromList(l.map((e) => e.toDouble()).toList());
+          prims.add(
+            GlbPrim(
+              (mat['name'] as String?) ?? 'mat$mi',
+              mi,
+              f32(acc.read(attrs['POSITION'] as int)),
+              f32(acc.read(attrs['NORMAL'] as int)),
+              f32(acc.read(attrs['TEXCOORD_0'] as int)),
+              Uint16List.fromList(
+                acc
+                    .read(attrs['JOINTS_0'] as int)
+                    .map((e) => e.toInt())
+                    .toList(),
+              ),
+              f32(acc.read(attrs['WEIGHTS_0'] as int)),
+              Uint32List.fromList(
+                acc.read(p['indices'] as int).map((e) => e.toInt()).toList(),
+              ),
+            ),
+          );
         }
       }
     }
@@ -266,8 +360,12 @@ class GlbModel {
         final path = target['path'] as String;
         if (path == 'scale') continue;
         final s = samplers[cm['sampler'] as int] as Map<String, dynamic>;
-        final times = Float32List.fromList(acc.read(s['input'] as int).map((e) => e.toDouble()).toList());
-        final values = Float32List.fromList(acc.read(s['output'] as int).map((e) => e.toDouble()).toList());
+        final times = Float32List.fromList(
+          acc.read(s['input'] as int).map((e) => e.toDouble()).toList(),
+        );
+        final values = Float32List.fromList(
+          acc.read(s['output'] as int).map((e) => e.toDouble()).toList(),
+        );
         if (times.isNotEmpty) dur = math.max(dur, times.last.toDouble());
         tracks.add(AnimTrack(target['node'] as int, path, times, values));
       }
@@ -283,14 +381,34 @@ class GlbModel {
       hairBase = built.hairBase;
     }
     final scenes = j['scenes'] as List?;
-    final extras = (scenes != null && scenes.isNotEmpty) ? (scenes.first as Map)['extras'] as Map? : null;
-    final batting = extras?['batting'] == null ? null : Map<String, dynamic>.from(extras!['batting'] as Map);
-    return GlbModel._(nodes, jointNodes, ibm, prims, atlasImage, byName, roots, anims, hairBase, batting);
+    final extras = (scenes != null && scenes.isNotEmpty)
+        ? (scenes.first as Map)['extras'] as Map?
+        : null;
+    final batting = extras?['batting'] == null
+        ? null
+        : Map<String, dynamic>.from(extras!['batting'] as Map);
+    return GlbModel._(
+      nodes,
+      jointNodes,
+      ibm,
+      prims,
+      atlasImage,
+      byName,
+      roots,
+      anims,
+      hairBase,
+      batting,
+    );
   }
 
-  static Future<({Map<String, dynamic> json, Uint8List bin})> readGlb(String asset) async {
+  static Future<({Map<String, dynamic> json, Uint8List bin})> readGlb(
+    String asset,
+  ) async {
     final data = await rootBundle.load(asset);
-    final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+    final bytes = data.buffer.asUint8List(
+      data.offsetInBytes,
+      data.lengthInBytes,
+    );
     final bd = ByteData.sublistView(bytes);
     var off = 12;
     Map<String, dynamic>? json;
@@ -300,7 +418,9 @@ class GlbModel {
       final type = bd.getUint32(off + 4, Endian.little);
       off += 8;
       if (type == 0x4E4F534A) {
-        json = jsonDecode(utf8.decode(bytes.sublist(off, off + len))) as Map<String, dynamic>;
+        json = jsonDecode(
+          utf8.decode(bytes.sublist(off, off + len)),
+        ) as Map<String, dynamic>;
       } else if (type == 0x004E4942) {
         bin = Uint8List.sublistView(bytes, off, off + len);
       }
@@ -309,12 +429,18 @@ class GlbModel {
     return (json: json!, bin: bin!);
   }
 
-  static Future<({ui.Image image, int hairBase})> _buildAtlas(Map<String, dynamic> j, Uint8List bin, List<GlbPrim> prims) async {
+  static Future<({ui.Image image, int hairBase})> _buildAtlas(
+    Map<String, dynamic> j,
+    Uint8List bin,
+    List<GlbPrim> prims,
+  ) async {
     final acc = AccessorReader(j, bin);
     Future<ui.Image> decode(int imageIdx) async {
       final img = (j['images'] as List)[imageIdx] as Map<String, dynamic>;
       final b = acc.view(img['bufferView'] as int);
-      final codec = await ui.instantiateImageCodec(b.buffer.asUint8List(b.offsetInBytes, b.lengthInBytes));
+      final codec = await ui.instantiateImageCodec(
+        b.buffer.asUint8List(b.offsetInBytes, b.lengthInBytes),
+      );
       return (await codec.getNextFrame()).image;
     }
 
@@ -333,8 +459,12 @@ class GlbModel {
       final tex = pbr['baseColorTexture'] as Map?;
       if (name.contains('Glasses')) continue;
       if (tex != null) {
-        final image = ((j['textures'] as List)[tex['index'] as int] as Map)['source'] as int;
-        final kit = name.contains('Outfit_Top') ? 1 : (name.contains('Outfit_Bottom') ? 2 : 0);
+        final image =
+            ((j['textures'] as List)[tex['index'] as int] as Map)['source']
+                as int;
+        final kit = name.contains('Outfit_Top')
+            ? 1
+            : (name.contains('Outfit_Bottom') ? 2 : 0);
         final spec = _CellSpec(image, cells.length, kit: kit);
         cells.add(spec);
         if (kit != 0) {
@@ -344,14 +474,24 @@ class GlbModel {
         }
         matCell[mi] = spec;
       } else {
-        final f = ((pbr['baseColorFactor'] as List?) ?? const [0.8, 0.8, 0.8, 1]).map((e) => (e as num).toDouble()).toList();
+        final f =
+            ((pbr['baseColorFactor'] as List?) ?? const [0.8, 0.8, 0.8, 1])
+                .map((e) => (e as num).toDouble())
+                .toList();
         matSwatch[mi] = swatchColors.length;
-        swatchColors.add(ui.Color.fromARGB(255, srgb(f[0]), srgb(f[1]), srgb(f[2])));
+        swatchColors.add(
+          ui.Color.fromARGB(255, srgb(f[0]), srgb(f[1]), srgb(f[2])),
+        );
       }
     }
     // Hair colour variants live after the authored swatches.
     final hairBase = swatchColors.length;
-    swatchColors.addAll(const [ui.Color(0xFF0B0A09), ui.Color(0xFF2B1A12), ui.Color(0xFF4A2F1C), ui.Color(0xFF8A8A8A)]);
+    swatchColors.addAll(const [
+      ui.Color(0xFF0B0A09),
+      ui.Color(0xFF2B1A12),
+      ui.Color(0xFF4A2F1C),
+      ui.Color(0xFF8A8A8A),
+    ]);
     final swatchCell = cells.length;
     cells.add(_CellSpec(-1, swatchCell));
 
@@ -359,16 +499,29 @@ class GlbModel {
     final recorder = ui.PictureRecorder();
     final c = ui.Canvas(recorder);
     final size = cell.toDouble();
-    ui.Rect cellRect(int idx) => ui.Rect.fromLTWH((idx % cols) * size, (idx ~/ cols) * size, size, size);
+    ui.Rect cellRect(int idx) =>
+        ui.Rect.fromLTWH((idx % cols) * size, (idx ~/ cols) * size, size, size);
 
     final decoded = <int, ui.Image>{};
     Future<ui.Image> img(int i) async => decoded[i] ??= await decode(i);
 
     final looks = {
       KitLook.batting: const ColorFilterSpec.identity(),
-      KitLook.fielding: ColorFilterSpec.hue(150, saturation: 1.05, brightness: 0.95),
-      KitLook.keeper: ColorFilterSpec.hue(185, saturation: 1.1, brightness: 1.15),
-      KitLook.umpire: ColorFilterSpec.hue(0, saturation: 0.08, brightness: 0.42),
+      KitLook.fielding: ColorFilterSpec.hue(
+        150,
+        saturation: 1.05,
+        brightness: 0.95,
+      ),
+      KitLook.keeper: ColorFilterSpec.hue(
+        185,
+        saturation: 1.1,
+        brightness: 1.15,
+      ),
+      KitLook.umpire: ColorFilterSpec.hue(
+        0,
+        saturation: 0.08,
+        brightness: 0.42,
+      ),
     };
     var kitTopIdx = 0, kitBottomIdx = 0;
     for (final spec in cells) {
@@ -387,8 +540,19 @@ class GlbModel {
         kitBottomIdx++;
       }
       final paint = ui.Paint()..filterQuality = ui.FilterQuality.medium;
-      if (filter != null) paint.colorFilter = ui.ColorFilter.matrix(filter.matrix);
-      c.drawImageRect(source, ui.Rect.fromLTWH(0, 0, source.width.toDouble(), source.height.toDouble()), cellRect(spec.index), paint);
+      if (filter != null)
+        paint.colorFilter = ui.ColorFilter.matrix(filter.matrix);
+      c.drawImageRect(
+        source,
+        ui.Rect.fromLTWH(
+          0,
+          0,
+          source.width.toDouble(),
+          source.height.toDouble(),
+        ),
+        cellRect(spec.index),
+        paint,
+      );
     }
     // Swatches: a 4x4 grid inside one cell.
     final sr = cellRect(swatchCell);
@@ -396,9 +560,20 @@ class GlbModel {
     final sp = ui.Paint();
     for (var i = 0; i < swatchColors.length && i < 16; i++) {
       sp.color = swatchColors[i];
-      c.drawRect(ui.Rect.fromLTWH(sr.left + (i % 4) * slot, sr.top + (i ~/ 4) * slot, slot, slot), sp);
+      c.drawRect(
+        ui.Rect.fromLTWH(
+          sr.left + (i % 4) * slot,
+          sr.top + (i ~/ 4) * slot,
+          slot,
+          slot,
+        ),
+        sp,
+      );
     }
-    final image = await recorder.endRecording().toImage(cols * cell, rows * cell);
+    final image = await recorder.endRecording().toImage(
+      cols * cell,
+      rows * cell,
+    );
 
     // Route every primitive to its atlas cell.
     for (final p in prims) {
@@ -427,7 +602,12 @@ class GlbModel {
       final x = (fx * src.width).round().clamp(0, src.width - 1);
       final y = (fy * src.height).round().clamp(0, src.height - 1);
       final i = (y * src.width + x) * 4;
-      return ui.Color.fromARGB(255, bytes.getUint8(i), bytes.getUint8(i + 1), bytes.getUint8(i + 2));
+      return ui.Color.fromARGB(
+        255,
+        bytes.getUint8(i),
+        bytes.getUint8(i + 1),
+        bytes.getUint8(i + 2),
+      );
     }
 
     final rec = ui.PictureRecorder();
@@ -438,9 +618,27 @@ class GlbModel {
     // and logo are in the lower half, the number on the right-hand (back) panel.
     final front = sample(0.08, 0.62), back = sample(0.8, 0.45);
     ui.Paint fill(ui.Color c) => ui.Paint()..color = c;
-    cv.drawRRect(ui.RRect.fromRectAndRadius(ui.Rect.fromLTWH(0.14 * w, 0.585 * h, 0.33 * w, 0.15 * h), const ui.Radius.circular(10)), fill(front));
-    cv.drawRRect(ui.RRect.fromRectAndRadius(ui.Rect.fromLTWH(0.13 * w, 0.715 * h, 0.12 * w, 0.13 * h), const ui.Radius.circular(10)), fill(front));
-    cv.drawRRect(ui.RRect.fromRectAndRadius(ui.Rect.fromLTWH(0.65 * w, 0.5 * h, 0.33 * w, 0.37 * h), const ui.Radius.circular(10)), fill(back));
+    cv.drawRRect(
+      ui.RRect.fromRectAndRadius(
+        ui.Rect.fromLTWH(0.14 * w, 0.585 * h, 0.33 * w, 0.15 * h),
+        const ui.Radius.circular(10),
+      ),
+      fill(front),
+    );
+    cv.drawRRect(
+      ui.RRect.fromRectAndRadius(
+        ui.Rect.fromLTWH(0.13 * w, 0.715 * h, 0.12 * w, 0.13 * h),
+        const ui.Radius.circular(10),
+      ),
+      fill(front),
+    );
+    cv.drawRRect(
+      ui.RRect.fromRectAndRadius(
+        ui.Rect.fromLTWH(0.65 * w, 0.5 * h, 0.33 * w, 0.37 * h),
+        const ui.Radius.circular(10),
+      ),
+      fill(back),
+    );
     return rec.endRecording().toImage(src.width, src.height);
   }
 }
@@ -467,10 +665,25 @@ class AccessorReader {
   List<num> read(int idx) {
     final a = (j['accessors'] as List)[idx] as Map<String, dynamic>;
     final count = a['count'] as int;
-    final comps = const {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}[a['type']]!;
+    final comps = const {
+      'SCALAR': 1,
+      'VEC2': 2,
+      'VEC3': 3,
+      'VEC4': 4,
+      'MAT4': 16,
+    }[a['type']]!;
     final type = a['componentType'] as int;
-    final size = const {5120: 1, 5121: 1, 5122: 2, 5123: 2, 5125: 4, 5126: 4}[type]!;
-    final bv = (j['bufferViews'] as List)[a['bufferView'] as int] as Map<String, dynamic>;
+    final size = const {
+      5120: 1,
+      5121: 1,
+      5122: 2,
+      5123: 2,
+      5125: 4,
+      5126: 4,
+    }[type]!;
+    final bv =
+        (j['bufferViews'] as List)[a['bufferView'] as int]
+            as Map<String, dynamic>;
     final stride = (bv['byteStride'] as int?) ?? comps * size;
     final d = view(a['bufferView'] as int);
     final base = (a['byteOffset'] as int?) ?? 0;
@@ -506,28 +719,82 @@ class AccessorReader {
 /// A colour matrix (hue rotation / saturation / brightness).
 class ColorFilterSpec {
   const ColorFilterSpec._(this.matrix);
-  const ColorFilterSpec.identity() : matrix = const [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0];
+  const ColorFilterSpec.identity()
+    : matrix = const [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+      ];
 
-  factory ColorFilterSpec.hue(double degrees, {double saturation = 1, double brightness = 1}) {
+  factory ColorFilterSpec.hue(
+    double degrees, {
+    double saturation = 1,
+    double brightness = 1,
+  }) {
     final a = degrees * math.pi / 180;
     final cs = math.cos(a), sn = math.sin(a);
     final hue = [
-      0.213 + cs * 0.787 - sn * 0.213, 0.715 - cs * 0.715 - sn * 0.715, 0.072 - cs * 0.072 + sn * 0.928,
-      0.213 - cs * 0.213 + sn * 0.143, 0.715 + cs * 0.285 + sn * 0.140, 0.072 - cs * 0.072 - sn * 0.283,
-      0.213 - cs * 0.213 - sn * 0.787, 0.715 - cs * 0.715 + sn * 0.715, 0.072 + cs * 0.928 + sn * 0.072,
+      0.213 + cs * 0.787 - sn * 0.213,
+      0.715 - cs * 0.715 - sn * 0.715,
+      0.072 - cs * 0.072 + sn * 0.928,
+      0.213 - cs * 0.213 + sn * 0.143,
+      0.715 + cs * 0.285 + sn * 0.140,
+      0.072 - cs * 0.072 - sn * 0.283,
+      0.213 - cs * 0.213 - sn * 0.787,
+      0.715 - cs * 0.715 + sn * 0.715,
+      0.072 + cs * 0.928 + sn * 0.072,
     ];
     final s = saturation;
     final sat = [
-      0.213 * (1 - s) + s, 0.715 * (1 - s), 0.072 * (1 - s),
-      0.213 * (1 - s), 0.715 * (1 - s) + s, 0.072 * (1 - s),
-      0.213 * (1 - s), 0.715 * (1 - s), 0.072 * (1 - s) + s,
+      0.213 * (1 - s) + s,
+      0.715 * (1 - s),
+      0.072 * (1 - s),
+      0.213 * (1 - s),
+      0.715 * (1 - s) + s,
+      0.072 * (1 - s),
+      0.213 * (1 - s),
+      0.715 * (1 - s),
+      0.072 * (1 - s) + s,
     ];
     final m = _mul(sat, hue);
     return ColorFilterSpec._([
-      m[0] * brightness, m[1] * brightness, m[2] * brightness, 0, 0,
-      m[3] * brightness, m[4] * brightness, m[5] * brightness, 0, 0,
-      m[6] * brightness, m[7] * brightness, m[8] * brightness, 0, 0,
-      0, 0, 0, 1, 0,
+      m[0] * brightness,
+      m[1] * brightness,
+      m[2] * brightness,
+      0,
+      0,
+      m[3] * brightness,
+      m[4] * brightness,
+      m[5] * brightness,
+      0,
+      0,
+      m[6] * brightness,
+      m[7] * brightness,
+      m[8] * brightness,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
     ]);
   }
 
@@ -540,10 +807,10 @@ class ColorFilterSpec {
 
 class Rig {
   Rig(this.m)
-      : lr = [for (final n in m.nodes) List<double>.of(n.r)],
-        lt = [for (final n in m.nodes) List<double>.of(n.t)],
-        wr = List.generate(m.nodes.length, (_) => List<double>.filled(9, 0)),
-        wt = List.generate(m.nodes.length, (_) => List<double>.filled(3, 0)) {
+    : lr = [for (final n in m.nodes) List<double>.of(n.r)],
+      lt = [for (final n in m.nodes) List<double>.of(n.t)],
+      wr = List.generate(m.nodes.length, (_) => List<double>.filled(9, 0)),
+      wt = List.generate(m.nodes.length, (_) => List<double>.filled(3, 0)) {
     updateAll();
   }
 
@@ -607,20 +874,31 @@ class Rig {
       if (tr.path == 'translation') {
         lt[tr.node] = [
           tr.values[lo * 3] + (tr.values[hi * 3] - tr.values[lo * 3]) * f,
-          tr.values[lo * 3 + 1] + (tr.values[hi * 3 + 1] - tr.values[lo * 3 + 1]) * f,
-          tr.values[lo * 3 + 2] + (tr.values[hi * 3 + 2] - tr.values[lo * 3 + 2]) * f,
+          tr.values[lo * 3 + 1] +
+              (tr.values[hi * 3 + 1] - tr.values[lo * 3 + 1]) * f,
+          tr.values[lo * 3 + 2] +
+              (tr.values[hi * 3 + 2] - tr.values[lo * 3 + 2]) * f,
         ];
       } else {
         // Quaternion nlerp (short path).
-        final ax = tr.values[lo * 4].toDouble(), ay = tr.values[lo * 4 + 1].toDouble(), az = tr.values[lo * 4 + 2].toDouble(), aw = tr.values[lo * 4 + 3].toDouble();
-        var bx = tr.values[hi * 4].toDouble(), by = tr.values[hi * 4 + 1].toDouble(), bz = tr.values[hi * 4 + 2].toDouble(), bw = tr.values[hi * 4 + 3].toDouble();
+        final ax = tr.values[lo * 4].toDouble(),
+            ay = tr.values[lo * 4 + 1].toDouble(),
+            az = tr.values[lo * 4 + 2].toDouble(),
+            aw = tr.values[lo * 4 + 3].toDouble();
+        var bx = tr.values[hi * 4].toDouble(),
+            by = tr.values[hi * 4 + 1].toDouble(),
+            bz = tr.values[hi * 4 + 2].toDouble(),
+            bw = tr.values[hi * 4 + 3].toDouble();
         if (ax * bx + ay * by + az * bz + aw * bw < 0) {
           bx = -bx;
           by = -by;
           bz = -bz;
           bw = -bw;
         }
-        var x = ax + (bx - ax) * f, y = ay + (by - ay) * f, z = az + (bz - az) * f, w = aw + (bw - aw) * f;
+        var x = ax + (bx - ax) * f,
+            y = ay + (by - ay) * f,
+            z = az + (bz - az) * f,
+            w = aw + (bw - aw) * f;
         final l = math.sqrt(x * x + y * y + z * z + w * w);
         if (l > 0) {
           x /= l;
@@ -639,7 +917,9 @@ class Rig {
   void blendToward(Rig other, double w) {
     for (var i = 0; i < lr.length; i++) {
       final a = lr[i], b = other.lr[i];
-      lr[i] = _orthonormal([for (var k = 0; k < 9; k++) a[k] + (b[k] - a[k]) * w]);
+      lr[i] = _orthonormal([
+        for (var k = 0; k < 9; k++) a[k] + (b[k] - a[k]) * w,
+      ]);
       for (var k = 0; k < 3; k++) {
         lt[i][k] = lt[i][k] + (other.lt[i][k] - lt[i][k]) * w;
       }
@@ -676,7 +956,8 @@ class Rig {
   }
 
   /// Rotates [bone] about the vertical axis through itself.
-  void yaw(int bone, double angle) => rotateWorld(bone, _axisAngle(const V3(0, 0, 1), angle));
+  void yaw(int bone, double angle) =>
+      rotateWorld(bone, _axisAngle(const V3(0, 0, 1), angle));
 
   /// Skin matrices (rotation 3x3 + translation) for every joint.
   List<({List<double> r, List<double> t})> skinMatrices() {
@@ -684,11 +965,24 @@ class Rig {
     for (var k = 0; k < m.jointNodes.length; k++) {
       final node = m.jointNodes[k];
       final ib = m.ibm[k];
-      final rib = [ib[0], ib[4], ib[8], ib[1], ib[5], ib[9], ib[2], ib[6], ib[10]];
+      final rib = [
+        ib[0],
+        ib[4],
+        ib[8],
+        ib[1],
+        ib[5],
+        ib[9],
+        ib[2],
+        ib[6],
+        ib[10],
+      ];
       final tib = V3(ib[12].toDouble(), ib[13].toDouble(), ib[14].toDouble());
       final r = _mul(wr[node], rib.map((e) => e.toDouble()).toList());
       final tv = _mulV(wr[node], tib);
-      out.add((r: r, t: [tv.x + wt[node][0], tv.y + wt[node][1], tv.z + wt[node][2]]));
+      out.add((
+        r: r,
+        t: [tv.x + wt[node][0], tv.y + wt[node][1], tv.z + wt[node][2]],
+      ));
     }
     return out;
   }
@@ -696,7 +990,12 @@ class Rig {
 
 /// Maps the model's scene space into the game world.
 class HeroTransform {
-  HeroTransform({required this.base, required this.right, required this.fwd, required this.scale});
+  HeroTransform({
+    required this.base,
+    required this.right,
+    required this.fwd,
+    required this.scale,
+  });
   final V3 base, right, fwd;
 
   /// World units per model metre.
@@ -704,7 +1003,8 @@ class HeroTransform {
   static const up = V3(0, 0, 1);
 
   /// Model scene space (x = left, -y = forward, z = up) to game world.
-  V3 toWorld(V3 s) => base + right * (-s.x * scale) + fwd * (-s.y * scale) + up * (s.z * scale);
+  V3 toWorld(V3 s) =>
+      base + right * (-s.x * scale) + fwd * (-s.y * scale) + up * (s.z * scale);
   V3 dirToWorld(V3 s) => right * (-s.x) + fwd * (-s.y) + up * s.z;
 
   /// Game world to model scene space.
@@ -743,8 +1043,13 @@ void drawSkinnedModel(
   for (final p in model.prims) {
     if (p.hidden) continue;
     if (p.isHair && !hair) continue;
-    final cellIdx = (p.kitTop || p.kitBottom) ? p.cell + style.kit.index : p.cell;
-    final origin = ui.Offset((cellIdx % GlbModel.cols) * cellPx, (cellIdx ~/ GlbModel.cols) * cellPx);
+    final cellIdx = (p.kitTop || p.kitBottom)
+        ? p.cell + style.kit.index
+        : p.cell;
+    final origin = ui.Offset(
+      (cellIdx % GlbModel.cols) * cellPx,
+      (cellIdx ~/ GlbModel.cols) * cellPx,
+    );
     int? swatch = p.swatch;
     if (p.isHair) swatch = model.swatchHairBase + style.hair.clamp(0, 3);
     final verts = p.lodVerts[lod];
@@ -753,7 +1058,9 @@ void drawSkinnedModel(
     final sp = List<ui.Offset>.filled(n, ui.Offset.zero);
     final sd = List<double>.filled(n, 0);
     final sc = List<int>.filled(n, 0);
-    final tr = p.tintable ? tint.$1 : 1.0, tg = p.tintable ? tint.$2 : 1.0, tb = p.tintable ? tint.$3 : 1.0;
+    final tr = p.tintable ? tint.$1 : 1.0,
+        tg = p.tintable ? tint.$2 : 1.0,
+        tb = p.tintable ? tint.$3 : 1.0;
     for (final v in verts) {
       final px = p.pos[v * 3], py = p.pos[v * 3 + 1], pz = p.pos[v * 3 + 2];
       final nx = p.nor[v * 3], ny = p.nor[v * 3 + 1], nz = p.nor[v * 3 + 2];
@@ -776,7 +1083,11 @@ void drawSkinnedModel(
       wp[v] = world;
       sp[v] = pr.pt;
       sd[v] = pr.depth;
-      final lit = (0.44 + 0.66 * math.max(0.0, normal.dot(lightDir)) + 0.14 * (normal.z * 0.5 + 0.5)).clamp(0.0, 1.25);
+      final lit =
+          (0.44 +
+                  0.66 * math.max(0.0, normal.dot(lightDir)) +
+                  0.14 * (normal.z * 0.5 + 0.5))
+              .clamp(0.0, 1.25);
       int ch(double t2) => (255 * (lit * t2).clamp(0.0, 1.0)).round();
       sc[v] = (0xFF << 24) | (ch(tr) << 16) | (ch(tg) << 8) | ch(tb);
     }
@@ -789,7 +1100,9 @@ void drawSkinnedModel(
       if (face.dot(cam.eye - centre) <= 0) continue; // back face
       depths.add((sd[a] + sd[b] + sd[c]) / 3);
       for (final v in [a, b, c]) {
-        posList..add(sp[v].dx)..add(sp[v].dy);
+        posList
+          ..add(sp[v].dx)
+          ..add(sp[v].dy);
         if (swatch != null) {
           final slot = cellPx / 4;
           texList
@@ -807,7 +1120,8 @@ void drawSkinnedModel(
 
   final tris = depths.length;
   if (tris == 0) return;
-  final order = List<int>.generate(tris, (i) => i)..sort((x, y) => depths[y].compareTo(depths[x]));
+  final order = List<int>.generate(tris, (i) => i)
+    ..sort((x, y) => depths[y].compareTo(depths[x]));
   final pos = Float32List(tris * 6), tex = Float32List(tris * 6);
   final col = Int32List(tris * 3);
   for (var o = 0; o < tris; o++) {
@@ -820,9 +1134,36 @@ void drawSkinnedModel(
       col[o * 3 + k] = colList[t * 3 + k];
     }
   }
-  final vertices = ui.Vertices.raw(ui.VertexMode.triangles, pos, textureCoordinates: tex, colors: col);
+  final vertices = ui.Vertices.raw(
+    ui.VertexMode.triangles,
+    pos,
+    textureCoordinates: tex,
+    colors: col,
+  );
   final paint = ui.Paint()
-    ..shader = ui.ImageShader(atlas, ui.TileMode.clamp, ui.TileMode.clamp, Float64List.fromList(const [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
-        filterQuality: ui.FilterQuality.medium);
+    ..shader = ui.ImageShader(
+      atlas,
+      ui.TileMode.clamp,
+      ui.TileMode.clamp,
+      Float64List.fromList(const [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+      ]),
+      filterQuality: ui.FilterQuality.medium,
+    );
   canvas.drawVertices(vertices, ui.BlendMode.modulate, paint);
 }

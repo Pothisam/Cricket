@@ -9,15 +9,16 @@ import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 
 IconData _iconFor(String type) => switch (type) {
-      'six' || 'four' => Icons.sports_cricket,
-      'wicket' => Icons.close,
-      'milestone' => Icons.emoji_events_outlined,
-      'match_start' => Icons.play_circle_outline,
-      'innings_end' => Icons.flag_outlined,
-      'match_result' => Icons.emoji_events,
-      'login' => Icons.login,
-      _ => Icons.notifications_none,
-    };
+  'six' || 'four' => Icons.sports_cricket,
+  'wicket' => Icons.close,
+  'milestone' => Icons.emoji_events_outlined,
+  'match_start' => Icons.play_circle_outline,
+  'innings_end' => Icons.flag_outlined,
+  'match_result' => Icons.emoji_events,
+  'login' => Icons.login,
+  'team_added' => Icons.group_add_outlined,
+  _ => Icons.notifications_none,
+};
 
 /// `GET /notifications`, read / read-all / delete, preferences and test push.
 class NotificationsScreen extends StatefulWidget {
@@ -82,7 +83,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           IconButton(
             tooltip: _unreadOnly ? 'Show all' : 'Unread only',
-            icon: Icon(_unreadOnly ? Icons.mark_email_unread : Icons.filter_list),
+            icon: Icon(
+              _unreadOnly ? Icons.mark_email_unread : Icons.filter_list,
+            ),
             onPressed: () {
               _unreadOnly = !_unreadOnly;
               _load(reset: true);
@@ -101,7 +104,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             icon: const Icon(Icons.tune),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const NotificationSettingsScreen()),
+              MaterialPageRoute(
+                builder: (_) => const NotificationSettingsScreen(),
+              ),
             ),
           ),
         ],
@@ -118,14 +123,20 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (_error != null && !_loading) {
         return ErrorRetry(message: _error!, onRetry: () => _load(reset: true));
       }
-      return ListView(children: [
-        const SizedBox(height: 120),
-        Center(
-          child: _loading
-              ? const CircularProgressIndicator()
-              : Text(_unreadOnly ? 'No unread notifications' : 'No notifications yet'),
-        ),
-      ]);
+      return ListView(
+        children: [
+          const SizedBox(height: 120),
+          Center(
+            child: _loading
+                ? const CircularProgressIndicator()
+                : Text(
+                    _unreadOnly
+                        ? 'No unread notifications'
+                        : 'No notifications yet',
+                  ),
+          ),
+        ],
+      );
     }
     return ListView.builder(
       itemCount: _items.length + (_cursor != null ? 1 : 0),
@@ -152,20 +163,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           },
           child: ListTile(
             leading: Icon(_iconFor(n.type)),
-            title: Text(n.title, style: TextStyle(fontWeight: n.unread ? FontWeight.bold : null)),
+            title: Text(
+              n.title,
+              style: TextStyle(fontWeight: n.unread ? FontWeight.bold : null),
+            ),
             subtitle: Text('${n.body}\n${_ago(n.createdAt)}'),
             isThreeLine: true,
             trailing: n.unread ? const Icon(Icons.circle, size: 10) : null,
             onTap: n.unread
                 ? () => _run(() async {
-                      await _api.markRead(n.id);
-                      if (mounted) {
-                        setState(() {
-                          n.readAt = DateTime.now();
-                          if (_unread > 0) _unread--;
-                        });
-                      }
-                    })
+                    await _api.markRead(n.id);
+                    if (mounted) {
+                      setState(() {
+                        n.readAt = DateTime.now();
+                        if (_unread > 0) _unread--;
+                      });
+                    }
+                  })
                 : null,
           ),
         );
@@ -187,10 +201,12 @@ class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
 
   @override
-  State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
 }
 
-class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+class _NotificationSettingsScreenState
+    extends State<NotificationSettingsScreen> {
   late final CricketApi _api = context.read<AppDependencies>().api!;
   NotificationPrefs? _p;
   String? _error;
@@ -198,11 +214,14 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   @override
   void initState() {
     super.initState();
-    _api.preferences().then((p) {
-      if (mounted) setState(() => _p = p);
-    }).catchError((Object e) {
-      if (mounted) setState(() => _error = apiMessage(e));
-    });
+    _api
+        .preferences()
+        .then((p) {
+          if (mounted) setState(() => _p = p);
+        })
+        .catchError((Object e) {
+          if (mounted) setState(() => _error = apiMessage(e));
+        });
   }
 
   Future<void> _save() async {
@@ -215,14 +234,20 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   }
 
   Future<void> _pickTime(bool start) async {
-    final cur = (start ? _p!.quietHoursStart : _p!.quietHoursEnd) ?? (start ? '23:00' : '07:00');
+    final cur =
+        (start ? _p!.quietHoursStart : _p!.quietHoursEnd) ??
+        (start ? '23:00' : '07:00');
     final parts = cur.split(':');
     final t = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1])),
+      initialTime: TimeOfDay(
+        hour: int.parse(parts[0]),
+        minute: int.parse(parts[1]),
+      ),
     );
     if (t == null) return;
-    final v = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    final v =
+        '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
     setState(() => start ? _p!.quietHoursStart = v : _p!.quietHoursEnd = v);
     await _save();
   }
@@ -234,66 +259,82 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       appBar: AppBar(title: const Text('Notification settings')),
       body: p == null
           ? (_error != null
-              ? ErrorRetry(
-                  message: _error!,
-                  onRetry: () {
-                    setState(() => _error = null);
-                    _api.preferences().then((v) {
-                      if (mounted) setState(() => _p = v);
-                    }).catchError((Object e) {
-                      if (mounted) setState(() => _error = apiMessage(e));
-                    });
-                  })
-              : const Center(child: CircularProgressIndicator()))
-          : ListView(children: [
-              _sw('New sign-in alerts', p.loginAlerts, (v) => p.loginAlerts = v),
-              _sw('Match started', p.matchStart, (v) => p.matchStart = v),
-              _sw('Fours and sixes', p.boundaries, (v) => p.boundaries = v),
-              _sw('Wickets', p.wickets, (v) => p.wickets = v),
-              _sw('Milestones (50 / 100)', p.milestones, (v) => p.milestones = v),
-              _sw('Innings break', p.inningsEnd, (v) => p.inningsEnd = v),
-              _sw('Match result', p.matchResult, (v) => p.matchResult = v),
-              const SectionHeader('QUIET HOURS'),
-              ListTile(
-                title: const Text('From'),
-                trailing: Text(p.quietHoursStart ?? 'Off'),
-                onTap: () => _pickTime(true),
-              ),
-              ListTile(
-                title: const Text('Until'),
-                trailing: Text(p.quietHoursEnd ?? 'Off'),
-                onTap: () => _pickTime(false),
-              ),
-              if (p.quietHoursStart != null || p.quietHoursEnd != null)
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      p.quietHoursStart = null;
-                      p.quietHoursEnd = null;
-                    });
-                    _save();
-                  },
-                  child: const Text('Clear quiet hours'),
+                ? ErrorRetry(
+                    message: _error!,
+                    onRetry: () {
+                      setState(() => _error = null);
+                      _api
+                          .preferences()
+                          .then((v) {
+                            if (mounted) setState(() => _p = v);
+                          })
+                          .catchError((Object e) {
+                            if (mounted) setState(() => _error = apiMessage(e));
+                          });
+                    },
+                  )
+                : const Center(child: CircularProgressIndicator()))
+          : ListView(
+              children: [
+                _sw(
+                  'New sign-in alerts',
+                  p.loginAlerts,
+                  (v) => p.loginAlerts = v,
                 ),
-              const SectionHeader('TEST'),
-              ListTile(
-                leading: const Icon(Icons.send_outlined),
-                title: const Text('Send a test notification'),
-                subtitle: const Text('Sent to your signed-in devices'),
-                onTap: () async {
-                  try {
-                    final (sent, failed) = await _api.sendTest();
-                    if (context.mounted) toast(context, 'Sent: $sent, failed: $failed');
-                  } on ApiException catch (e) {
-                    if (context.mounted) toast(context, e.message);
-                  }
-                },
-              ),
-            ]),
+                _sw('Match started', p.matchStart, (v) => p.matchStart = v),
+                _sw('Fours and sixes', p.boundaries, (v) => p.boundaries = v),
+                _sw('Wickets', p.wickets, (v) => p.wickets = v),
+                _sw(
+                  'Milestones (50 / 100)',
+                  p.milestones,
+                  (v) => p.milestones = v,
+                ),
+                _sw('Innings break', p.inningsEnd, (v) => p.inningsEnd = v),
+                _sw('Match result', p.matchResult, (v) => p.matchResult = v),
+                const SectionHeader('QUIET HOURS'),
+                ListTile(
+                  title: const Text('From'),
+                  trailing: Text(p.quietHoursStart ?? 'Off'),
+                  onTap: () => _pickTime(true),
+                ),
+                ListTile(
+                  title: const Text('Until'),
+                  trailing: Text(p.quietHoursEnd ?? 'Off'),
+                  onTap: () => _pickTime(false),
+                ),
+                if (p.quietHoursStart != null || p.quietHoursEnd != null)
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        p.quietHoursStart = null;
+                        p.quietHoursEnd = null;
+                      });
+                      _save();
+                    },
+                    child: const Text('Clear quiet hours'),
+                  ),
+                const SectionHeader('TEST'),
+                ListTile(
+                  leading: const Icon(Icons.send_outlined),
+                  title: const Text('Send a test notification'),
+                  subtitle: const Text('Sent to your signed-in devices'),
+                  onTap: () async {
+                    try {
+                      final (sent, failed) = await _api.sendTest();
+                      if (context.mounted)
+                        toast(context, 'Sent: $sent, failed: $failed');
+                    } on ApiException catch (e) {
+                      if (context.mounted) toast(context, e.message);
+                    }
+                  },
+                ),
+              ],
+            ),
     );
   }
 
-  Widget _sw(String label, bool value, void Function(bool) set) => SwitchListTile(
+  Widget _sw(String label, bool value, void Function(bool) set) =>
+      SwitchListTile(
         title: Text(label),
         value: value,
         onChanged: (v) {

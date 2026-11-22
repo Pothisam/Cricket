@@ -13,8 +13,9 @@ import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import 'player_detail_screen.dart';
 
-String _roleLabel(String name) =>
-    PlayerRole.values.firstWhere((r) => r.name == name, orElse: () => PlayerRole.batter).label;
+String _roleLabel(String name) => PlayerRole.values
+    .firstWhere((r) => r.name == name, orElse: () => PlayerRole.batter)
+    .label;
 
 /// `GET /players/search` + `POST /players/from-user`.
 /// Finds people in my player list and registered users (by name, or by their exact e-mail).
@@ -44,7 +45,10 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
 
   void _onChanged(String v) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 400), () => _search(v.trim()));
+    _debounce = Timer(
+      const Duration(milliseconds: 400),
+      () => _search(v.trim()),
+    );
   }
 
   Future<void> _search(String q) async {
@@ -63,7 +67,8 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
     });
     try {
       final r = await _api.searchPlayers(q);
-      if (!mounted || _controller.text.trim() != q) return; // a newer search is running
+      if (!mounted || _controller.text.trim() != q)
+        return; // a newer search is running
       setState(() {
         _results = r;
         _last = q;
@@ -121,7 +126,10 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
         ],
       ),
       body: _error != null
-          ? ErrorRetry(message: _error!, onRetry: () => _search(_controller.text.trim()))
+          ? ErrorRetry(
+              message: _error!,
+              onRetry: () => _search(_controller.text.trim()),
+            )
           : ListView(
               children: [
                 if (_loading) const LinearProgressIndicator(),
@@ -137,40 +145,62 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
                 if (!_loading && _last.isNotEmpty && _results.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(24),
-                    child: Text('No players found', textAlign: TextAlign.center),
+                    child: Text(
+                      'No players found',
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 if (mine.isNotEmpty) const SectionHeader('IN MY PLAYERS'),
                 for (final r in mine)
                   ListTile(
                     leading: _avatar(r),
                     title: Text(r.isSelf ? '${r.name} (you)' : r.name),
-                    subtitle: Text([_roleLabel(r.role), if (r.email?.isNotEmpty == true) r.email!].join(' · ')),
-                    trailing: r.isRegistered ? const Icon(Icons.verified_user_outlined, size: 18) : null,
+                    subtitle: Text(
+                      [
+                        _roleLabel(r.role),
+                        if (r.email?.isNotEmpty == true) r.email!,
+                      ].join(' · '),
+                    ),
+                    trailing: r.isRegistered
+                        ? const Icon(Icons.verified_user_outlined, size: 18)
+                        : null,
                     onTap: () {
                       final id = r.playerId;
                       if (id != null && tc.playerById(id) != null) {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => PlayerDetailScreen(playerId: id)),
+                          MaterialPageRoute(
+                            builder: (_) => PlayerDetailScreen(playerId: id),
+                          ),
                         );
                       } else {
                         toast(context, 'Sync to load this player');
                       }
                     },
                   ),
-                if (others.isNotEmpty) const SectionHeader('REGISTERED PLAYERS'),
+                if (others.isNotEmpty)
+                  const SectionHeader('REGISTERED PLAYERS'),
                 for (final r in others)
                   ListTile(
                     leading: _avatar(r),
                     title: Text(r.name),
-                    subtitle: Text([
-                      _roleLabel(r.role),
-                      if (r.city?.isNotEmpty == true) r.city!,
-                      if (r.email?.isNotEmpty == true) r.email!,
-                    ].join(' · ')),
+                    subtitle: Text(
+                      [
+                        _roleLabel(r.role),
+                        if (r.city?.isNotEmpty == true) r.city!,
+                        if (r.email?.isNotEmpty == true) r.email!,
+                      ].join(' · '),
+                    ),
                     trailing: _adding.contains(r.userId)
-                        ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                        : FilledButton.tonal(onPressed: () => _add(r), child: const Text('Add')),
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : FilledButton.tonal(
+                            onPressed: () => _add(r),
+                            child: const Text('Add'),
+                          ),
                   ),
               ],
             ),
@@ -178,7 +208,9 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
   }
 
   Widget _avatar(PlayerSearchItem r) => CircleAvatar(
-        backgroundImage: r.photoUrl == null ? null : NetworkImage(r.photoUrl!),
-        child: r.photoUrl == null ? Text(r.name.isEmpty ? '?' : r.name[0].toUpperCase()) : null,
-      );
+    backgroundImage: r.photoUrl == null ? null : NetworkImage(r.photoUrl!),
+    child: r.photoUrl == null
+        ? Text(r.name.isEmpty ? '?' : r.name[0].toUpperCase())
+        : null,
+  );
 }

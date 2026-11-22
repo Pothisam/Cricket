@@ -5,7 +5,12 @@ import '../../models/ball_event.dart';
 import '../../models/team.dart';
 
 class TeamAvatar extends StatelessWidget {
-  const TeamAvatar({super.key, required this.short, this.colorIndex = 0, this.size = 40});
+  const TeamAvatar({
+    super.key,
+    required this.short,
+    this.colorIndex = 0,
+    this.size = 40,
+  });
 
   final String short;
   final int colorIndex;
@@ -49,11 +54,11 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+            ),
           ),
           ?trailing,
         ],
@@ -63,7 +68,13 @@ class SectionHeader extends StatelessWidget {
 }
 
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.icon, required this.title, this.message, this.action});
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.action,
+  });
   final IconData icon;
   final String title;
   final String? message;
@@ -83,9 +94,11 @@ class EmptyState extends StatelessWidget {
             Text(title, style: Theme.of(context).textTheme.titleMedium),
             if (message case final msg?) ...[
               const SizedBox(height: 6),
-              Text(msg,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: cs.onSurfaceVariant)),
+              Text(
+                msg,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: cs.onSurfaceVariant),
+              ),
             ],
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
@@ -125,11 +138,14 @@ class BallBubble extends StatelessWidget {
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
-      child: Text(label,
-          style: TextStyle(
-              color: fg,
-              fontWeight: FontWeight.bold,
-              fontSize: label.length > 2 ? size * 0.3 : size * 0.4)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontWeight: FontWeight.bold,
+          fontSize: label.length > 2 ? size * 0.3 : size * 0.4,
+        ),
+      ),
     );
   }
 }
@@ -145,9 +161,17 @@ class StatTile extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(value, style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: t.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 2),
-        Text(label, style: t.textTheme.labelSmall?.copyWith(color: t.colorScheme.onSurfaceVariant)),
+        Text(
+          label,
+          style: t.textTheme.labelSmall?.copyWith(
+            color: t.colorScheme.onSurfaceVariant,
+          ),
+        ),
       ],
     );
   }
@@ -156,20 +180,43 @@ class StatTile extends StatelessWidget {
 String two(num n) => n.toStringAsFixed(2);
 
 String formatDate(DateTime d) {
-  const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const m = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return '${d.day} ${m[d.month - 1]} ${d.year}';
 }
 
-Future<bool> confirm(BuildContext context, String title, String message,
-    {String action = 'Delete'}) async {
+Future<bool> confirm(
+  BuildContext context,
+  String title,
+  String message, {
+  String action = 'Delete',
+}) async {
   final r = await showDialog<bool>(
     context: context,
     builder: (_) => AlertDialog(
       title: Text(title),
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(action)),
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(action),
+        ),
       ],
     ),
   );

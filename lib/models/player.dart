@@ -73,6 +73,10 @@ class Player {
 
   bool get isRegistered => linkedUserId != null;
 
+  /// A registered user who is not me: only they can edit their own profile.
+  /// (I can still add them to teams or remove them from my list.)
+  bool get isReadOnly => isRegistered && !isSelf;
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,

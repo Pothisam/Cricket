@@ -49,4 +49,10 @@ void main() {
     expect(b.jerseyNumber, 7);
     expect(b.gender, 'female');
   });
+
+  test('a registered user who is not me is read-only; my own player and manual players are editable', () {
+    expect(Player(id: '1', name: 'Other', linkedUserId: 'u2').isReadOnly, isTrue);
+    expect(Player(id: '2', name: 'Me', linkedUserId: 'u1', isSelf: true).isReadOnly, isFalse);
+    expect(Player(id: '3', name: 'Manual').isReadOnly, isFalse);
+  });
 }

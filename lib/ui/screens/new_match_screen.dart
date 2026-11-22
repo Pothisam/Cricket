@@ -66,7 +66,8 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
   Future<void> _start(TeamsController tc, MatchesController mc) async {
     final a = _a!, b = _b!;
     final names = <String, String>{
-      for (final id in [..._xiA, ..._xiB]) id: tc.playerById(id)?.name ?? 'Unknown',
+      for (final id in [..._xiA, ..._xiB])
+        id: tc.playerById(id)?.name ?? 'Unknown',
     };
     final m = CricketMatch(
       id: newId(),
@@ -105,8 +106,7 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
         body: const EmptyState(
           icon: Icons.groups,
           title: 'Two teams needed',
-          message:
-              'Create at least two teams with 2 or more players each.\nYou can also load sample data from the More tab.',
+          message: 'Create at least two teams with 2 or more players each.\nYou can also load sample data from the More tab.',
         ),
       );
     }
@@ -146,7 +146,9 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
                 child: TextField(
                   controller: _venue,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Venue (optional)'),
+                  decoration: const InputDecoration(
+                    labelText: 'Venue (optional)',
+                  ),
                 ),
               ),
             ],
@@ -155,8 +157,14 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
             const SectionHeader('TOSS'),
             SegmentedButton<bool>(
               segments: [
-                ButtonSegment(value: true, label: Text('${_a!.shortName} won toss')),
-                ButtonSegment(value: false, label: Text('${_b!.shortName} won toss')),
+                ButtonSegment(
+                  value: true,
+                  label: Text('${_a!.shortName} won toss'),
+                ),
+                ButtonSegment(
+                  value: false,
+                  label: Text('${_b!.shortName} won toss'),
+                ),
               ],
               selected: {_tossA},
               onSelectionChanged: (s) => setState(() => _tossA = s.first),
@@ -164,8 +172,16 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
             const SizedBox(height: 12),
             SegmentedButton<bool>(
               segments: const [
-                ButtonSegment(value: true, label: Text('Chose to bat'), icon: Icon(Icons.sports_cricket)),
-                ButtonSegment(value: false, label: Text('Chose to bowl'), icon: Icon(Icons.sports_baseball)),
+                ButtonSegment(
+                  value: true,
+                  label: Text('Chose to bat'),
+                  icon: Icon(Icons.sports_cricket),
+                ),
+                ButtonSegment(
+                  value: false,
+                  label: Text('Chose to bowl'),
+                  icon: Icon(Icons.sports_baseball),
+                ),
               ],
               selected: {_bat},
               onSelectionChanged: (s) => setState(() => _bat = s.first),
@@ -174,15 +190,22 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
           if (_a != null && _a!.id == _b?.id)
             Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: Text('Choose two different teams',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              child: Text(
+                'Choose two different teams',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
             ),
         ],
       ),
     );
   }
 
-  Widget _teamPicker(String label, bool isA, List<Team> teams, TeamsController tc) {
+  Widget _teamPicker(
+    String label,
+    bool isA,
+    List<Team> teams,
+    TeamsController tc,
+  ) {
     final team = isA ? _a : _b;
     final xi = isA ? _xiA : _xiB;
     return Card(
@@ -193,7 +216,10 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
             DropdownButtonFormField<Team>(
               initialValue: team,
               decoration: InputDecoration(labelText: label),
-              items: [for (final t in teams) DropdownMenuItem(value: t, child: Text(t.name))],
+              items: [
+                for (final t in teams)
+                  DropdownMenuItem(value: t, child: Text(t.name)),
+              ],
               onChanged: (t) => _setTeam(isA, t, tc),
             ),
             if (team != null) ...[
@@ -201,11 +227,19 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: Text('Playing XI: ${xi.length} selected',
-                        style: TextStyle(
-                            color: xi.length < 2 ? Theme.of(context).colorScheme.error : null)),
+                    child: Text(
+                      'Playing XI: ${xi.length} selected',
+                      style: TextStyle(
+                        color: xi.length < 2
+                            ? Theme.of(context).colorScheme.error
+                            : null,
+                      ),
+                    ),
                   ),
-                  TextButton(onPressed: () => _pickXi(isA, tc), child: const Text('Select players')),
+                  TextButton(
+                    onPressed: () => _pickXi(isA, tc),
+                    child: const Text('Select players'),
+                  ),
                 ],
               ),
             ],
@@ -217,7 +251,11 @@ class _NewMatchScreenState extends State<NewMatchScreen> {
 }
 
 class _XiPicker extends StatefulWidget {
-  const _XiPicker({required this.team, required this.players, required this.initial});
+  const _XiPicker({
+    required this.team,
+    required this.players,
+    required this.initial,
+  });
   final Team team;
   final List<Player> players;
   final List<String> initial;
@@ -241,13 +279,17 @@ class _XiPickerState extends State<_XiPicker> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text('${widget.team.name} · ${_sel.length} selected',
-                      style: Theme.of(context).textTheme.titleMedium),
+                  child: Text(
+                    '${widget.team.name} · ${_sel.length} selected',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
                 TextButton(
-                  onPressed: () => setState(() => _sel
-                    ..clear()
-                    ..addAll(widget.players.map((p) => p.id))),
+                  onPressed: () => setState(
+                    () => _sel
+                      ..clear()
+                      ..addAll(widget.players.map((p) => p.id)),
+                  ),
                   child: const Text('All'),
                 ),
               ],
@@ -262,7 +304,9 @@ class _XiPickerState extends State<_XiPicker> {
                     value: _sel.contains(p.id),
                     title: Text(p.name),
                     subtitle: Text(p.role.label),
-                    onChanged: (v) => setState(() => v == true ? _sel.add(p.id) : _sel.remove(p.id)),
+                    onChanged: (v) => setState(
+                      () => v == true ? _sel.add(p.id) : _sel.remove(p.id),
+                    ),
                   ),
               ],
             ),
@@ -275,10 +319,10 @@ class _XiPickerState extends State<_XiPicker> {
                 onPressed: _sel.length < 2
                     ? null
                     : () => Navigator.pop(context, [
-                          // keep batting order = team order
-                          for (final p in widget.players)
-                            if (_sel.contains(p.id)) p.id
-                        ]),
+                        // keep batting order = team order
+                        for (final p in widget.players)
+                          if (_sel.contains(p.id)) p.id,
+                      ]),
                 child: const Text('Done'),
               ),
             ),

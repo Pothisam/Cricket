@@ -83,6 +83,23 @@ class CricketApi {
   Future<Player> addPlayerFromUser(String userId) async =>
       Player.fromJson(_map(await client.post('/players/from-user', body: {'userId': userId})));
 
+  // ------------------------------------------------------ teams / matches I belong to
+  /// Teams created by others in which I was added as a player.
+  Future<List<JoinedTeam>> joinedTeams() async =>
+      [for (final j in _items(await client.get('/me/joined-teams'))) JoinedTeam.fromJson(j)];
+
+  /// One of those teams with its squad (public player details only).
+  Future<JoinedTeam> joinedTeam(String ownerId, String teamId) async =>
+      JoinedTeam.fromJson(_map(await client.get('/me/joined-teams/$ownerId/$teamId')));
+
+  /// My match history in other scorers' matches (I played, or my team played).
+  Future<List<MatchSummary>> myMatches() async =>
+      [for (final j in _items(await client.get('/me/matches'))) MatchSummary.fromJson(j)];
+
+  /// Full scorecard of one of those matches.
+  Future<CricketMatch> myMatch(String ownerId, String matchId) async =>
+      CricketMatch.fromJson(_map(await client.get('/me/matches/$ownerId/$matchId')));
+
   // ------------------------------------------------------------- devices
   Future<void> registerToken(Json deviceInfo) => client.put('/devices/token', body: deviceInfo);
 

@@ -18,7 +18,9 @@ class MatchCard extends StatelessWidget {
       child: InkWell(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: match.id)),
+          MaterialPageRoute(
+            builder: (_) => MatchDetailScreen(matchId: match.id),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -29,19 +31,37 @@ class MatchCard extends StatelessWidget {
                 children: [
                   if (live)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red.shade600,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text('LIVE',
-                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'LIVE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     )
                   else
-                    Text('RESULT', style: TextStyle(color: cs.outline, fontSize: 11, fontWeight: FontWeight.bold)),
+                    Text(
+                      'RESULT',
+                      style: TextStyle(
+                        color: cs.outline,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   const Spacer(),
-                  Text('${match.overs} overs · ${formatDate(match.date)}',
-                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+                  Text(
+                    '${match.overs} overs · ${formatDate(match.date)}',
+                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -89,16 +109,30 @@ class MatchCard extends StatelessWidget {
     final isWinner = match.winnerId == teamId;
     return Row(
       children: [
-        TeamAvatar(short: match.teamShort(teamId), colorIndex: colorIndex + (teamId == match.teamAId ? 0 : 2), size: 32),
+        TeamAvatar(
+          short: match.teamShort(teamId),
+          colorIndex: colorIndex + (teamId == match.teamAId ? 0 : 2),
+          size: 32,
+        ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(match.teamName(teamId),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: isWinner ? FontWeight.bold : FontWeight.w500)),
+          child: Text(
+            match.teamName(teamId),
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: isWinner ? FontWeight.bold : FontWeight.w500,
+            ),
+          ),
         ),
-        Text(score, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          score,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         const SizedBox(width: 6),
-        SizedBox(width: 56, child: Text(overs, style: const TextStyle(fontSize: 12))),
+        SizedBox(
+          width: 56,
+          child: Text(overs, style: const TextStyle(fontSize: 12)),
+        ),
       ],
     );
   }

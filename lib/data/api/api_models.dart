@@ -145,6 +145,7 @@ class MatchSummary {
         teamAShort = (j['teamA'] as Map?)?['short'] as String? ?? '',
         teamBShort = (j['teamB'] as Map?)?['short'] as String? ?? '',
         teamAId = (j['teamA'] as Map?)?['id'] as String? ?? '',
+        teamBId = (j['teamB'] as Map?)?['id'] as String? ?? '',
         tossText = j['tossText'] as String? ?? '',
         resultText = j['resultText'] as String?,
         innings = [
@@ -152,7 +153,7 @@ class MatchSummary {
             InningsSummaryApi.fromJson(Map<String, dynamic>.from(i as Map))
         ];
 
-  final String id, ownerId, status, teamAName, teamBName, teamAShort, teamBShort, teamAId, tossText;
+  final String id, ownerId, status, teamAName, teamBName, teamAShort, teamBShort, teamAId, teamBId, tossText;
   final DateTime date;
   final String? venue, resultText;
   final int overs;
@@ -308,4 +309,42 @@ class PlayerSearchItem {
   final String name, role, battingStyle, bowlingStyle;
   final bool isRegistered, isSelf;
   bool get isMine => source == 'mine';
+}
+
+/// A team created by someone else in which I am a member (`GET /me/joined-teams`).
+class JoinedTeam {
+  JoinedTeam.fromJson(Map<String, dynamic> j)
+      : ownerId = j['ownerId'] as String,
+        ownerName = j['ownerName'] as String?,
+        teamId = j['teamId'] as String,
+        name = j['name'] as String? ?? '',
+        shortName = j['shortName'] as String? ?? '',
+        colorIndex = (j['colorIndex'] as num?)?.toInt() ?? 0,
+        playerCount = (j['playerCount'] as num?)?.toInt() ?? 0,
+        squad = [
+          for (final m in (j['squad'] as List? ?? const []))
+            SquadMember.fromJson(Map<String, dynamic>.from(m as Map))
+        ];
+
+  final String ownerId, teamId, name, shortName;
+  final String? ownerName;
+  final int colorIndex, playerCount;
+
+  /// Only filled by `GET /me/joined-teams/{ownerId}/{teamId}`.
+  final List<SquadMember> squad;
+}
+
+class SquadMember {
+  SquadMember.fromJson(Map<String, dynamic> j)
+      : name = j['name'] as String? ?? '',
+        role = j['role'] as String? ?? 'batter',
+        battingStyle = j['battingStyle'] as String? ?? '',
+        bowlingStyle = j['bowlingStyle'] as String? ?? '',
+        photoUrl = j['photoUrl'] as String?,
+        isRegistered = j['isRegistered'] as bool? ?? false,
+        isMe = j['isMe'] as bool? ?? false;
+
+  final String name, role, battingStyle, bowlingStyle;
+  final String? photoUrl;
+  final bool isRegistered, isMe;
 }

@@ -83,6 +83,7 @@ class SyncManager extends ChangeNotifier {
       lastError = null;
       notifyListeners();
       await syncAll();
+      await _reload(); // also loads the teams / matches I belong to
     } catch (e) {
       lastError = e is ApiException ? e.message : 'Could not start the session: $e';
       debugPrint('startSession failed: $e');
@@ -160,6 +161,13 @@ class SyncManager extends ChangeNotifier {
         'player' => SyncState.players,
         _ => SyncState.matches,
       };
+      if (m['reason'] == 'FORBIDDEN' && kind == SyncState.players) {
+        // e.g. a registered user's player edited on this device: the server's copy wins.
+        try {
+          await _players.save(await api.player(m['id'] as String));
+        } catch (_) {}
+        continue; // not "rejected": it is settled, so the dirty flag is cleared below
+      }
       (rejected[kind] ??= {}).add(m['id'] as String);
     }
     Set<String> ok(String kind, Iterable<String> ids) =>

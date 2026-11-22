@@ -3,8 +3,11 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
 import '../../models/team.dart';
+import '../../state/membership_controller.dart';
 import '../../state/teams_controller.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
+import 'joined_screens.dart';
 import 'team_detail_screen.dart';
 
 class TeamsTab extends StatelessWidget {
@@ -21,32 +24,41 @@ class TeamsTab extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Add team'),
       ),
-      body: tc.teams.isEmpty
-          ? const EmptyState(
-              icon: Icons.groups,
-              title: 'No teams yet',
-              message: 'Add your first team to get started.',
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-              itemCount: tc.teams.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemBuilder: (_, i) {
-                final t = tc.teams[i];
-                return Card(
-                  child: ListTile(
-                    leading: TeamAvatar.of(t),
-                    title: Text(t.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text('${t.playerIds.length} players'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => TeamDetailScreen(teamId: t.id)),
+      body: PullToRefresh(
+        child: (tc.teams.isEmpty && context.watch<MembershipController>().teams.isEmpty)
+            ? const RefreshableEmpty(
+                child: EmptyState(
+                  icon: Icons.groups,
+                  title: 'No teams yet',
+                  message: 'Add your first team to get started.',
+                ),
+              )
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                children: [
+                  for (final t in tc.teams)
+                    Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: ListTile(
+                        leading: TeamAvatar.of(t),
+                        title: Text(
+                          t.name,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text('${t.playerIds.length} players'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TeamDetailScreen(teamId: t.id),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  const JoinedTeamsSection(),
+                ],
+              ),
+      ),
     );
   }
 }
@@ -66,21 +78,29 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
     showDragHandle: true,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setState) => Padding(
-        padding: EdgeInsets.fromLTRB(20, 0, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
         child: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(team == null ? 'New team' : 'Edit team',
-                  style: Theme.of(ctx).textTheme.titleLarge),
+              Text(
+                team == null ? 'New team' : 'Edit team',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: name,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(labelText: 'Team name'),
-                validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a name' : null,
+                validator: (v) =>
+                    (v ?? '').trim().isEmpty ? 'Enter a name' : null,
                 onChanged: (v) {
                   if (!shortEdited) short.text = _abbr(v);
                 },
@@ -92,7 +112,8 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
                 maxLength: 4,
                 onChanged: (_) => shortEdited = true,
                 decoration: const InputDecoration(labelText: 'Short name'),
-                validator: (v) => (v ?? '').trim().isEmpty ? 'Enter a short name' : null,
+                validator: (v) =>
+                    (v ?? '').trim().isEmpty ? 'Enter a short name' : null,
               ),
               Wrap(
                 spacing: 10,
@@ -104,7 +125,11 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
                         radius: 16,
                         backgroundColor: teamColors[i],
                         child: color == i
-                            ? const Icon(Icons.check, size: 18, color: Colors.white)
+                            ? const Icon(
+                                Icons.check,
+                                size: 18,
+                                color: Colors.white,
+                              )
                             : null,
                       ),
                     ),
@@ -139,7 +164,11 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
 }
 
 String _abbr(String name) {
-  final words = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+  final words = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
   if (words.isEmpty) return '';
   if (words.length == 1) {
     final w = words.first;

@@ -6,9 +6,11 @@ import 'data/app_dependencies.dart';
 import 'services/auth_service.dart';
 import 'state/auth_controller.dart';
 import 'state/matches_controller.dart';
+import 'state/membership_controller.dart';
 import 'state/teams_controller.dart';
 import 'ui/screens/home_shell.dart';
 import 'ui/screens/login_screen.dart';
+import 'ui/widgets/pull_refresh.dart';
 
 class CricketApp extends StatelessWidget {
   const CricketApp({super.key, required this.deps});
@@ -22,10 +24,18 @@ class CricketApp extends StatelessWidget {
         Provider<AppDependencies>.value(value: deps),
         if (deps.sync != null) ChangeNotifierProvider.value(value: deps.sync!),
         ChangeNotifierProvider(
-            create: (_) => AuthController(AuthService(), sync: deps.sync)),
+          create: (_) => AuthController(AuthService(), sync: deps.sync),
+        ),
         ChangeNotifierProvider(
           create: (_) {
             final c = TeamsController(deps.teams, deps.players)..load();
+            deps.sync?.addReloader(c.load);
+            return c;
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final c = MembershipController(deps.api);
             deps.sync?.addReloader(c.load);
             return c;
           },
@@ -41,6 +51,7 @@ class CricketApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Cricket Scorer',
         debugShowCheckedModeBanner: false,
+        scrollBehavior: const AppScrollBehavior(),
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
         home: Builder(

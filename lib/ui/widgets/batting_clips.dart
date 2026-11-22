@@ -35,7 +35,8 @@ class BattingShot {
 /// mapping uses the clips' own metadata (shot direction, footwork, contact), so
 /// adding a clip to the model makes it available automatically.
 class BattingClips {
-  BattingClips(Map<String, dynamic> meta) : _clips = Map<String, dynamic>.from(meta['clips'] as Map);
+  BattingClips(Map<String, dynamic> meta)
+    : _clips = Map<String, dynamic>.from(meta['clips'] as Map);
 
   final Map<String, dynamic> _clips;
 
@@ -44,9 +45,13 @@ class BattingClips {
   bool has(String name) => _clips.containsKey(name);
 
   BattingShot shot(String name) {
-    final m = Map<String, dynamic>.from((_clips[name] ?? _clips['Defence_Forward']) as Map);
+    final m = Map<String, dynamic>.from(
+      (_clips[name] ?? _clips['Defence_Forward']) as Map,
+    );
     final contact = m['contact'] as Map?;
-    final pt = contact == null ? null : (contact['point'] as List).map((e) => (e as num).toDouble()).toList();
+    final pt = contact == null
+        ? null
+        : (contact['point'] as List).map((e) => (e as num).toDouble()).toList();
     return BattingShot(
       clip: _clips.containsKey(name) ? name : 'Defence_Forward',
       duration: (m['duration'] as num).toDouble(),
@@ -90,7 +95,9 @@ class BattingClips {
           case WicketType.stumped:
             return shot('Drive_Straight'); // a full swing that misses
           case WicketType.lbw:
-            return shot('Defence_Forward'); // beaten playing forward, hit on the pad
+            return shot(
+              'Defence_Forward',
+            ); // beaten playing forward, hit on the pad
           case WicketType.hitWicket:
             return shot('Cut_Square');
           case WicketType.caught:
@@ -98,7 +105,9 @@ class BattingClips {
             return _byShot(b);
         }
       case BallOutcome.dot:
-        return b.shotPath == null && b.shotDirection == null ? shot('Defence_Forward') : _byShot(b);
+        return b.shotPath == null && b.shotDirection == null
+            ? shot('Defence_Forward')
+            : _byShot(b);
       case BallOutcome.runs:
       case BallOutcome.four:
       case BallOutcome.six:
@@ -109,7 +118,8 @@ class BattingClips {
 
   BattingShot _byShot(BallEvent b) {
     final az = azimuthOf(b);
-    final airborne = b.loft == ShotLoft.aerial || b.loft == ShotLoft.lofted || b.runs == 6;
+    final airborne =
+        b.loft == ShotLoft.aerial || b.loft == ShotLoft.lofted || b.runs == 6;
     if (airborne) {
       // Lofted shots: over cover, straight, or the leg side (pulled / hooked / flicked).
       if (az < -100 && has('Cut_Late')) return shot('Cut_Late');
@@ -124,14 +134,21 @@ class BattingClips {
     var bestGap = 1e9;
     _clips.forEach((name, raw) {
       final m = raw as Map;
-      if (m['contact'] == null || name.startsWith('Loft') || name.startsWith('Defence')) return;
+      if (m['contact'] == null ||
+          name.startsWith('Loft') ||
+          name.startsWith('Defence'))
+        return;
       final gap = _angleGap(az, (m['shotAzimuthDeg'] as num).toDouble());
       if (gap < bestGap) {
         bestGap = gap;
         best = name;
       }
     });
-    if (b.runs == 0 && b.outcome == BallOutcome.dot && az.abs() < 30 && has('Defence_Forward')) return shot('Defence_Forward');
+    if (b.runs == 0 &&
+        b.outcome == BallOutcome.dot &&
+        az.abs() < 30 &&
+        has('Defence_Forward'))
+      return shot('Defence_Forward');
     return shot(best ?? 'Drive_Straight');
   }
 }

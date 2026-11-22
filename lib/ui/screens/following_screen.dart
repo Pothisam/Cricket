@@ -53,10 +53,15 @@ class _FollowingScreenState extends State<FollowingScreen> {
           decoration: const InputDecoration(labelText: 'Share code'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(context, c.text.trim().toUpperCase()),
-              child: const Text('Follow')),
+            onPressed: () =>
+                Navigator.pop(context, c.text.trim().toUpperCase()),
+            child: const Text('Follow'),
+          ),
         ],
       ),
     );
@@ -72,7 +77,11 @@ class _FollowingScreenState extends State<FollowingScreen> {
         );
       }
     } on ApiException catch (e) {
-      if (mounted) toast(context, e.code == 'NOT_FOUND' ? 'No match with that code' : e.message);
+      if (mounted)
+        toast(
+          context,
+          e.code == 'NOT_FOUND' ? 'No match with that code' : e.message,
+        );
     }
   }
 
@@ -90,58 +99,75 @@ class _FollowingScreenState extends State<FollowingScreen> {
       body: _error != null && items == null
           ? ErrorRetry(message: _error!, onRetry: _load)
           : RefreshIndicator(
-        onRefresh: _load,
-        child: items == null
-            ? ListView(children: const [
-                SizedBox(height: 120),
-                Center(child: CircularProgressIndicator()),
-              ])
-            : items.isEmpty
-                ? ListView(children: const [
-                    SizedBox(height: 120),
-                    Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text(
-                        'You are not following any match.\nAsk the scorer for a share code to follow a live match and get its notifications.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ])
-                : ListView(children: [
-                    for (final m in items)
-                      Dismissible(
-                        key: ValueKey('${m.ownerId}/${m.id}'),
-                        direction: DismissDirection.endToStart,
-                        background: Container(
-                          color: Theme.of(context).colorScheme.errorContainer,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.notifications_off_outlined),
-                        ),
-                        onDismissed: (_) async {
-                          setState(() => items.remove(m));
-                          try {
-                            await _api.unfollow(m.ownerId, m.id);
-                          } on ApiException catch (e) {
-                            if (mounted) toast(context, e.message);
-                          }
-                        },
-                        child: ListTile(
-                          leading: Icon(m.isLive ? Icons.sensors : Icons.sports_cricket),
-                          title: Text('${m.teamAShort} vs ${m.teamBShort}'),
-                          subtitle: Text([
-                            for (final i in m.innings) i.score,
-                            if (m.resultText?.isNotEmpty == true) m.resultText!,
-                          ].join('  ·  ')),
-                          trailing: m.isLive ? const Text('LIVE') : null,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => SharedMatchScreen(summary: m)),
+              onRefresh: _load,
+              child: items == null
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 120),
+                        Center(child: CircularProgressIndicator()),
+                      ],
+                    )
+                  : items.isEmpty
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 120),
+                        Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text(
+                            'You are not following any match.\nAsk the scorer for a share code to follow a live match and get its notifications.',
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                      ),
-                  ]),
-      ),
+                      ],
+                    )
+                  : ListView(
+                      children: [
+                        for (final m in items)
+                          Dismissible(
+                            key: ValueKey('${m.ownerId}/${m.id}'),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .errorContainer,
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              child: const Icon(
+                                Icons.notifications_off_outlined,
+                              ),
+                            ),
+                            onDismissed: (_) async {
+                              setState(() => items.remove(m));
+                              try {
+                                await _api.unfollow(m.ownerId, m.id);
+                              } on ApiException catch (e) {
+                                if (mounted) toast(context, e.message);
+                              }
+                            },
+                            child: ListTile(
+                              leading: Icon(
+                                m.isLive ? Icons.sensors : Icons.sports_cricket,
+                              ),
+                              title: Text('${m.teamAShort} vs ${m.teamBShort}'),
+                              subtitle: Text(
+                                [
+                                  for (final i in m.innings) i.score,
+                                  if (m.resultText?.isNotEmpty == true)
+                                    m.resultText!,
+                                ].join('  ·  '),
+                              ),
+                              trailing: m.isLive ? const Text('LIVE') : null,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SharedMatchScreen(summary: m),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
     );
   }
 }
@@ -155,19 +181,32 @@ class SharedMatchScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${summary.teamAShort} vs ${summary.teamBShort}')),
-      body: ListView(children: [
-        ListTile(title: Text(summary.tossText), subtitle: Text(summary.resultText ?? '')),
-        for (final i in summary.innings)
+      appBar: AppBar(
+        title: Text('${summary.teamAShort} vs ${summary.teamBShort}'),
+      ),
+      body: ListView(
+        children: [
           ListTile(
-            title: Text(i.battingTeamId == summary.teamAId ? summary.teamAName : summary.teamBName),
-            trailing: Text(i.score),
+            title: Text(summary.tossText),
+            subtitle: Text(summary.resultText ?? ''),
           ),
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text('Pull down on the Following list to refresh the score.'),
-        ),
-      ]),
+          for (final i in summary.innings)
+            ListTile(
+              title: Text(
+                i.battingTeamId == summary.teamAId
+                    ? summary.teamAName
+                    : summary.teamBName,
+              ),
+              trailing: Text(i.score),
+            ),
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              'Pull down on the Following list to refresh the score.',
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -190,10 +229,13 @@ class PublicMatchScreen extends StatelessWidget {
             return Center(child: Text(e is ApiException ? e.message : '$e'));
           }
           final m = snap.data;
-          if (m == null) return const Center(child: CircularProgressIndicator());
-          return ListView(children: [
-            for (final i in m.innings) ScorecardView(match: m, innings: i),
-          ]);
+          if (m == null)
+            return const Center(child: CircularProgressIndicator());
+          return ListView(
+            children: [
+              for (final i in m.innings) ScorecardView(match: m, innings: i),
+            ],
+          );
         },
       ),
     );

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../domain/stats_service.dart';
 import '../../state/matches_controller.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import 'player_detail_screen.dart';
 
 class StatsTab extends StatelessWidget {
@@ -28,28 +29,37 @@ class StatsTab extends StatelessWidget {
             ],
           ),
         ),
-        body: s.totalMatches == 0
-            ? const EmptyState(
-                icon: Icons.leaderboard,
-                title: 'No statistics yet',
-                message: 'Complete a match to see leaderboards and records.',
-              )
-            : TabBarView(children: [
-                _leaderboard(
-                  context,
-                  s.topRunScorers(),
-                  (p) => '${p.runs}',
-                  (p) => 'Inns ${p.innings} · HS ${p.highScoreText} · Avg ${two(p.average)} · SR ${two(p.strikeRate)}',
+        body: PullToRefresh(
+          child: s.totalMatches == 0
+              ? const RefreshableEmpty(
+                  child: EmptyState(
+                    icon: Icons.leaderboard,
+                    title: 'No statistics yet',
+                    message:
+                        'Complete a match to see leaderboards and records.',
+                  ),
+                )
+              : TabBarView(
+                  children: [
+                    _leaderboard(
+                      context,
+                      s.topRunScorers(),
+                      (p) => '${p.runs}',
+                      (p) =>
+                          'Inns ${p.innings} · HS ${p.highScoreText} · Avg ${two(p.average)} · SR ${two(p.strikeRate)}',
+                    ),
+                    _leaderboard(
+                      context,
+                      s.topWicketTakers(),
+                      (p) => '${p.wickets}',
+                      (p) =>
+                          'Best ${p.bestBowling} · Econ ${two(p.economy)} · Ov ${p.oversBowled}',
+                    ),
+                    _teams(s),
+                    _records(s),
+                  ],
                 ),
-                _leaderboard(
-                  context,
-                  s.topWicketTakers(),
-                  (p) => '${p.wickets}',
-                  (p) => 'Best ${p.bestBowling} · Econ ${two(p.economy)} · Ov ${p.oversBowled}',
-                ),
-                _teams(s),
-                _records(s),
-              ]),
+        ),
       ),
     );
   }
@@ -69,11 +79,16 @@ class StatsTab extends StatelessWidget {
           leading: CircleAvatar(child: Text('${i + 1}')),
           title: Text(p.name),
           subtitle: Text(sub(p)),
-          trailing: Text(value(p),
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+          trailing: Text(
+            value(p),
+            style: Theme.of(context).textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => PlayerDetailScreen(playerId: p.id)),
+            MaterialPageRoute(
+              builder: (_) => PlayerDetailScreen(playerId: p.id),
+            ),
           ),
         );
       },
@@ -102,15 +117,22 @@ class StatsTab extends StatelessWidget {
               ],
               rows: [
                 for (final t in rows)
-                  DataRow(cells: [
-                    DataCell(Text(t.name)),
-                    DataCell(Text('${t.played}')),
-                    DataCell(Text('${t.won}')),
-                    DataCell(Text('${t.lost}')),
-                    DataCell(Text('${t.tied}')),
-                    DataCell(Text('${t.points}', style: const TextStyle(fontWeight: FontWeight.bold))),
-                    DataCell(Text('${t.highest}')),
-                  ]),
+                  DataRow(
+                    cells: [
+                      DataCell(Text(t.name)),
+                      DataCell(Text('${t.played}')),
+                      DataCell(Text('${t.won}')),
+                      DataCell(Text('${t.lost}')),
+                      DataCell(Text('${t.tied}')),
+                      DataCell(
+                        Text(
+                          '${t.points}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      DataCell(Text('${t.highest}')),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -137,7 +159,8 @@ class StatsTab extends StatelessWidget {
       if (runs.isNotEmpty) ('Most runs', '${runs.first.runs}', runs.first.name),
       if (bestHs != null && bestHs.highScore > 0)
         ('Highest individual score', bestHs.highScoreText, bestHs.name),
-      if (wkts.isNotEmpty) ('Most wickets', '${wkts.first.wickets}', wkts.first.name),
+      if (wkts.isNotEmpty)
+        ('Most wickets', '${wkts.first.wickets}', wkts.first.name),
       if (mostSixes != null && mostSixes.sixes > 0)
         ('Most sixes', '${mostSixes.sixes}', mostSixes.name),
     ];
@@ -151,8 +174,13 @@ class StatsTab extends StatelessWidget {
               child: ListTile(
                 title: Text(label),
                 subtitle: who.isEmpty ? null : Text(who),
-                trailing: Text(value,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                trailing: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ),

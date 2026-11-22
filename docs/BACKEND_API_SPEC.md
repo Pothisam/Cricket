@@ -783,3 +783,21 @@ Indexes: `idx_players_email`, `idx_players_linked_user`, `ux_players_self` (one 
 3. People who never signed in stay as plain players in the list of whoever added them.
 4. Search finds other users by name, or by their exact e-mail only (no partial e-mail matching, no enumeration). Their e-mail is masked in results. Height, weight, date of birth and phone are never shared with other users.
 5. The user's own player cannot be deleted; users can opt out of search with `isDiscoverable = false`.
+
+---
+
+## 15. Teams and matches I belong to; no versioning
+
+Implemented by `Database/CricketDB_Upgrade_002_Memberships.sql`.
+
+- The `version` column is removed from `teams`, `players` and `matches` (and the 409 version-conflict rule). `PUT` is a plain upsert. `created_at`, `updated_at`, `deleted_at` stay (sync + soft delete). No audit/history tables.
+- A person who signed in can belong to teams and matches created by other scorers. A player in someone's list that is linked to a user (`players.linked_user_id`) and sits in `team_players` / `match_players` is that user's membership; no separate table.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/me/joined-teams` | Teams of other scorers that contain me |
+| GET | `/me/joined-teams/{ownerId}/{teamId}` | Team + squad (public details) |
+| GET | `/me/matches` | Match history in other scorers' matches (played, or my team played) |
+| GET | `/me/matches/{ownerId}/{matchId}` | Full scorecard (participants only) |
+
+Notification `team_added`: sent to a registered user when a player linked to them is newly added to a squad.

@@ -7,6 +7,7 @@ import '../../state/teams_controller.dart';
 import '../../data/app_dependencies.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
+import '../widgets/pull_refresh.dart';
 import 'match_detail_screen.dart';
 import 'player_form.dart';
 
@@ -33,93 +34,115 @@ class PlayerDetailScreen extends StatelessWidget {
               IconButton(
                 tooltip: 'Cloud stats',
                 icon: const Icon(Icons.cloud_outlined),
-                onPressed: () => showPlayerCloudStats(context, player.id, player.name),
+                onPressed: () =>
+                    showPlayerCloudStats(context, player.id, player.name),
               ),
             IconButton(
-              icon: const Icon(Icons.edit_outlined),
+              tooltip: player.isReadOnly ? 'Managed by the player' : 'Edit',
+              icon: Icon(
+                player.isReadOnly ? Icons.lock_outline : Icons.edit_outlined,
+              ),
               onPressed: () => showPlayerForm(context, player: player),
             ),
             if (!player.isSelf)
               IconButton(
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () async {
-                if (await confirm(context, 'Delete player?',
-                    'The player is removed from all teams. Past scorecards keep their name.')) {
-                  await tc.deletePlayer(player);
-                  if (context.mounted) Navigator.pop(context);
-                }
-              },
-            ),
-          ],
-          bottom: const TabBar(tabs: [
-            Tab(text: 'Batting'),
-            Tab(text: 'Bowling'),
-            Tab(text: 'Matches'),
-          ]),
-        ),
-        body: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    child: Text(player.name[0].toUpperCase(),
-                        style: const TextStyle(fontSize: 24)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(player.role.label,
-                            style: Theme.of(context).textTheme.titleMedium),
-                        Text(player.battingStyle),
-                        if (player.bowlingStyle != 'None') Text(player.bowlingStyle),
-                        if (teams.isNotEmpty)
-                          Text(teams.map((t) => t.name).join(', '),
-                              style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-                      ],
-                    ),
-                  ),
-                ],
+                  if (await confirm(
+                    context,
+                    'Delete player?',
+                    'The player is removed from all teams. Past scorecards keep their name.',
+                  )) {
+                    await tc.deletePlayer(player);
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
               ),
-            ),
-            Expanded(
-              child: TabBarView(children: [
-                _grid([
-                  ('Matches', '${c.matches}'),
-                  ('Innings', '${c.innings}'),
-                  ('Runs', '${c.runs}'),
-                  ('Highest', c.highScoreText),
-                  ('Average', c.innings == 0 ? '-' : two(c.average)),
-                  ('Strike rate', c.balls == 0 ? '-' : two(c.strikeRate)),
-                  ('Not outs', '${c.notOuts}'),
-                  ('Balls', '${c.balls}'),
-                  ('4s', '${c.fours}'),
-                  ('6s', '${c.sixes}'),
-                  ('50s', '${c.fifties}'),
-                  ('100s', '${c.hundreds}'),
-                  ('Ducks', '${c.ducks}'),
-                  ('Catches', '${c.catches}'),
-                  ('Stumpings', '${c.stumpings}'),
-                  ('Run outs', '${c.runOuts}'),
-                ]),
-                _grid([
-                  ('Innings', '${c.bowlInnings}'),
-                  ('Overs', c.oversBowled),
-                  ('Wickets', '${c.wickets}'),
-                  ('Runs', '${c.runsConceded}'),
-                  ('Best', c.bestBowling),
-                  ('Economy', c.ballsBowled == 0 ? '-' : two(c.economy)),
-                  ('Average', c.wickets == 0 ? '-' : two(c.bowlingAverage)),
-                  ('Maidens', '${c.maidens}'),
-                ]),
-                _records(context, c),
-              ]),
-            ),
           ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Batting'),
+              Tab(text: 'Bowling'),
+              Tab(text: 'Matches'),
+            ],
+          ),
+        ),
+        body: PullToRefresh(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      child: Text(
+                        player.name[0].toUpperCase(),
+                        style: const TextStyle(fontSize: 24),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            player.role.label,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          Text(player.battingStyle),
+                          if (player.bowlingStyle != 'None')
+                            Text(player.bowlingStyle),
+                          if (teams.isNotEmpty)
+                            Text(
+                              teams.map((t) => t.name).join(', '),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _grid([
+                      ('Matches', '${c.matches}'),
+                      ('Innings', '${c.innings}'),
+                      ('Runs', '${c.runs}'),
+                      ('Highest', c.highScoreText),
+                      ('Average', c.innings == 0 ? '-' : two(c.average)),
+                      ('Strike rate', c.balls == 0 ? '-' : two(c.strikeRate)),
+                      ('Not outs', '${c.notOuts}'),
+                      ('Balls', '${c.balls}'),
+                      ('4s', '${c.fours}'),
+                      ('6s', '${c.sixes}'),
+                      ('50s', '${c.fifties}'),
+                      ('100s', '${c.hundreds}'),
+                      ('Ducks', '${c.ducks}'),
+                      ('Catches', '${c.catches}'),
+                      ('Stumpings', '${c.stumpings}'),
+                      ('Run outs', '${c.runOuts}'),
+                    ]),
+                    _grid([
+                      ('Innings', '${c.bowlInnings}'),
+                      ('Overs', c.oversBowled),
+                      ('Wickets', '${c.wickets}'),
+                      ('Runs', '${c.runsConceded}'),
+                      ('Best', c.bestBowling),
+                      ('Economy', c.ballsBowled == 0 ? '-' : two(c.economy)),
+                      ('Average', c.wickets == 0 ? '-' : two(c.bowlingAverage)),
+                      ('Maidens', '${c.maidens}'),
+                    ]),
+                    _records(context, c),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -141,10 +164,12 @@ class PlayerDetailScreen extends StatelessWidget {
 
   Widget _records(BuildContext context, PlayerCareer c) {
     if (c.records.isEmpty) {
-      return const EmptyState(
-        icon: Icons.history,
-        title: 'No match records',
-        message: 'Records appear after the player plays a completed match.',
+      return const RefreshableEmpty(
+        child: EmptyState(
+          icon: Icons.history,
+          title: 'No match records',
+          message: 'Records appear after the player plays a completed match.',
+        ),
       );
     }
     final recs = c.records.reversed.toList();
@@ -165,15 +190,21 @@ class PlayerDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 if (r.batted)
-                  Text('${r.runs}${r.out ? '' : '*'} (${r.ballsFaced})',
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    '${r.runs}${r.out ? '' : '*'} (${r.ballsFaced})',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 if (r.bowled)
-                  Text('${r.wickets}/${r.runsConceded} (${oversTextOf(r.ballsBowled)})'),
+                  Text(
+                    '${r.wickets}/${r.runsConceded} (${oversTextOf(r.ballsBowled)})',
+                  ),
               ],
             ),
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: m.id)),
+              MaterialPageRoute(
+                builder: (_) => MatchDetailScreen(matchId: m.id),
+              ),
             ),
           ),
         );

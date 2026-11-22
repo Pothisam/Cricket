@@ -20,8 +20,11 @@ class ScoringScreen extends StatelessWidget {
     final match = mc.byId(matchId);
     if (match == null) return const Scaffold(body: SizedBox.shrink());
     return ChangeNotifierProvider(
-      create: (_) =>
-          ScoringController(match, mc, live: context.read<AppDependencies>().live),
+      create: (_) => ScoringController(
+        match,
+        mc,
+        live: context.read<AppDependencies>().live,
+      ),
       child: const _ScoringBody(),
     );
   }
@@ -37,7 +40,11 @@ class _ScoringBody extends StatefulWidget {
 class _ScoringBodyState extends State<_ScoringBody> {
   bool _prompting = false;
 
-  Future<String?> _pick(String title, List<String> ids, String Function(String) nameOf) {
+  Future<String?> _pick(
+    String title,
+    List<String> ids,
+    String Function(String) nameOf,
+  ) {
     return showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -74,7 +81,8 @@ class _ScoringBodyState extends State<_ScoringBody> {
   }
 
   Future<void> _maybePrompt(ScoringController c) async {
-    if (_prompting || !mounted || !c.match.isLive || c.innings.completed) return;
+    if (_prompting || !mounted || !c.match.isLive || c.innings.completed)
+      return;
     if (c.needsBatter) {
       _prompting = true;
       await _chooseBatters(c);
@@ -105,7 +113,11 @@ class _ScoringBodyState extends State<_ScoringBody> {
   }
 
   Future<void> _chooseBowler(ScoringController c) async {
-    final id = await _pick('Select bowler', c.availableBowlers, c.match.playerName);
+    final id = await _pick(
+      'Select bowler',
+      c.availableBowlers,
+      c.match.playerName,
+    );
     if (id != null) await c.setBowler(id);
   }
 
@@ -149,30 +161,66 @@ class _ScoringBodyState extends State<_ScoringBody> {
   Future<void> _scoreRuns(ScoringController c, int runs) async {
     ShotChoice? shot;
     if (runs > 0) {
-      shot = await pickShot(context, title: '$runs run${runs == 1 ? '' : 's'} — draw the shot', runs: runs);
+      shot = await pickShot(
+        context,
+        title: '$runs run${runs == 1 ? '' : 's'} — draw the shot',
+        runs: runs,
+      );
       if (shot == null) return;
     }
-    await c.recordBall(runs: runs, shotDirection: shot?.direction, shotPath: shot?.path, loft: shot?.loft);
+    await c.recordBall(
+      runs: runs,
+      shotDirection: shot?.direction,
+      shotPath: shot?.path,
+      loft: shot?.loft,
+    );
   }
 
   Future<void> _extra(ScoringController c, ExtraType type) async {
     switch (type) {
       case ExtraType.wide:
-        final n = await _pickNumber('Wide', 'Additional runs run', [0, 1, 2, 3, 4]);
+        final n = await _pickNumber('Wide', 'Additional runs run', [
+          0,
+          1,
+          2,
+          3,
+          4,
+        ]);
         if (n != null) await c.recordBall(extra: type, extraRuns: 1 + n);
       case ExtraType.noBall:
-        final n = await _pickNumber('No ball', 'Runs off the bat', [0, 1, 2, 3, 4, 6]);
+        final n = await _pickNumber('No ball', 'Runs off the bat', [
+          0,
+          1,
+          2,
+          3,
+          4,
+          6,
+        ]);
         if (n == null || !mounted) return;
         ShotChoice? shot;
         if (n > 0) {
-          shot = await pickShot(context, title: 'No ball + $n — draw the shot', runs: n);
+          shot = await pickShot(
+            context,
+            title: 'No ball + $n — draw the shot',
+            runs: n,
+          );
           if (shot == null) return;
         }
         await c.recordBall(
-            extra: type, extraRuns: 1, runs: n, shotDirection: shot?.direction, shotPath: shot?.path, loft: shot?.loft);
+          extra: type,
+          extraRuns: 1,
+          runs: n,
+          shotDirection: shot?.direction,
+          shotPath: shot?.path,
+          loft: shot?.loft,
+        );
       case ExtraType.bye:
       case ExtraType.legBye:
-        final n = await _pickNumber(type == ExtraType.bye ? 'Byes' : 'Leg byes', 'Runs run', [1, 2, 3, 4]);
+        final n = await _pickNumber(
+          type == ExtraType.bye ? 'Byes' : 'Leg byes',
+          'Runs run',
+          [1, 2, 3, 4],
+        );
         if (n != null) await c.recordBall(extra: type, extraRuns: n);
       case ExtraType.none:
     }
@@ -193,11 +241,17 @@ class _ScoringBodyState extends State<_ScoringBody> {
       showDragHandle: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) {
-          final needsFielder = type == WicketType.caught ||
+          final needsFielder =
+              type == WicketType.caught ||
               type == WicketType.stumped ||
               type == WicketType.runOut;
           return SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(ctx).viewInsets.bottom + 20),
+            padding: EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              MediaQuery.of(ctx).viewInsets.bottom + 20,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,8 +279,14 @@ class _ScoringBodyState extends State<_ScoringBody> {
                   const SizedBox(height: 6),
                   SegmentedButton<String>(
                     segments: [
-                      ButtonSegment(value: inn.strikerId!, label: Text(m.playerName(inn.strikerId))),
-                      ButtonSegment(value: inn.nonStrikerId!, label: Text(m.playerName(inn.nonStrikerId))),
+                      ButtonSegment(
+                        value: inn.strikerId!,
+                        label: Text(m.playerName(inn.strikerId)),
+                      ),
+                      ButtonSegment(
+                        value: inn.nonStrikerId!,
+                        label: Text(m.playerName(inn.nonStrikerId)),
+                      ),
                     ],
                     selected: {outId},
                     onSelectionChanged: (s) => setState(() => outId = s.first),
@@ -251,11 +311,16 @@ class _ScoringBodyState extends State<_ScoringBody> {
                   DropdownButtonFormField<String>(
                     initialValue: fielder,
                     decoration: InputDecoration(
-                      labelText: type == WicketType.stumped ? 'Wicket-keeper' : 'Fielder',
+                      labelText: type == WicketType.stumped
+                          ? 'Wicket-keeper'
+                          : 'Fielder',
                     ),
                     items: [
                       for (final id in fielders)
-                        DropdownMenuItem(value: id, child: Text(m.playerName(id))),
+                        DropdownMenuItem(
+                          value: id,
+                          child: Text(m.playerName(id)),
+                        ),
                     ],
                     onChanged: (v) => setState(() => fielder = v),
                   ),
@@ -264,7 +329,9 @@ class _ScoringBodyState extends State<_ScoringBody> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                    ),
                     onPressed: () => Navigator.pop(ctx, true),
                     child: const Text('Confirm wicket'),
                   ),
@@ -278,24 +345,29 @@ class _ScoringBodyState extends State<_ScoringBody> {
     if (ok == true) {
       ShotChoice? shot;
       if (type == WicketType.caught && mounted) {
-        shot = await pickShot(context, title: 'Caught — draw the shot', caught: true);
+        shot = await pickShot(
+          context,
+          title: 'Caught — draw the shot',
+          caught: true,
+        );
         if (shot == null) return;
       }
       await c.recordBall(
-          runs: runs,
-          wicket: type,
-          outPlayerId: outId,
-          fielderId: fielder,
-          shotDirection: shot?.direction,
-          shotPath: shot?.path,
-          loft: shot?.loft);
+        runs: runs,
+        wicket: type,
+        outPlayerId: outId,
+        fielderId: fielder,
+        shotDirection: shot?.direction,
+        shotPath: shot?.path,
+        loft: shot?.loft,
+      );
     }
   }
 
   void _openScorecard(ScoringController c) => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: c.match.id)),
-      );
+    context,
+    MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: c.match.id)),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -320,20 +392,38 @@ class _ScoringBodyState extends State<_ScoringBody> {
                 case 'swap':
                   await c.swapStrike();
                 case 'endInnings':
-                  if (await confirm(context, 'End innings?', 'The innings will be closed with the current score.', action: 'End')) {
+                  if (await confirm(
+                    context,
+                    'End innings?',
+                    'The innings will be closed with the current score.',
+                    action: 'End',
+                  )) {
                     await c.endInningsEarly();
                   }
                 case 'endMatch':
-                  if (await confirm(context, 'End match?', 'The match will be finished using the current position.', action: 'End')) {
+                  if (await confirm(
+                    context,
+                    'End match?',
+                    'The match will be finished using the current position.',
+                    action: 'End',
+                  )) {
                     await c.endMatch();
                   }
               }
             },
             itemBuilder: (_) => [
-              if (c.canScore) const PopupMenuItem(value: 'swap', child: Text('Swap batters')),
+              if (c.canScore)
+                const PopupMenuItem(value: 'swap', child: Text('Swap batters')),
               if (m.isLive && !inn.completed)
-                const PopupMenuItem(value: 'endInnings', child: Text('End innings')),
-              if (m.isLive) const PopupMenuItem(value: 'endMatch', child: Text('End match')),
+                const PopupMenuItem(
+                  value: 'endInnings',
+                  child: Text('End innings'),
+                ),
+              if (m.isLive)
+                const PopupMenuItem(
+                  value: 'endMatch',
+                  child: Text('End match'),
+                ),
             ],
           ),
         ],
@@ -373,25 +463,44 @@ class _ScoringBodyState extends State<_ScoringBody> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(m.teamName(c.innings.battingTeamId),
-                style: TextStyle(color: cs.onPrimaryContainer)),
+            Text(
+              m.teamName(c.innings.battingTeamId),
+              style: TextStyle(color: cs.onPrimaryContainer),
+            ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text(s.score,
-                    style: TextStyle(fontSize: 44, fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
+                Text(
+                  s.score,
+                  style: TextStyle(
+                    fontSize: 44,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onPrimaryContainer,
+                  ),
+                ),
                 const SizedBox(width: 10),
-                Text('(${s.oversString}/${m.overs})',
-                    style: TextStyle(fontSize: 18, color: cs.onPrimaryContainer)),
+                Text(
+                  '(${s.oversString}/${m.overs})',
+                  style: TextStyle(fontSize: 18, color: cs.onPrimaryContainer),
+                ),
                 const Spacer(),
-                Text('CRR ${two(s.runRate)}', style: TextStyle(color: cs.onPrimaryContainer)),
+                Text(
+                  'CRR ${two(s.runRate)}',
+                  style: TextStyle(color: cs.onPrimaryContainer),
+                ),
               ],
             ),
             if (t != null && c.isSecondInnings)
               Text('Target $t', style: TextStyle(color: cs.onPrimaryContainer)),
             if (chase != null)
-              Text(chase, style: TextStyle(fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
+              Text(
+                chase,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: cs.onPrimaryContainer,
+                ),
+              ),
           ],
         ),
       ),
@@ -401,25 +510,36 @@ class _ScoringBodyState extends State<_ScoringBody> {
   Widget _crease(BuildContext context, ScoringController c, InningsSummary s) {
     final inn = c.innings;
     final m = c.match;
-    final head = Theme.of(context)
-        .textTheme
-        .labelSmall
+    final head = Theme.of(context).textTheme.labelSmall
         ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
 
     TableRow batRow(String? id, bool striker) {
       final b = s.batter(id);
-      return TableRow(children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Text(id == null ? '—' : '${m.playerName(id)}${striker ? ' *' : ''}',
-              style: TextStyle(fontWeight: striker ? FontWeight.bold : FontWeight.normal)),
-        ),
-        Text('${b?.runs ?? 0}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text('${b?.balls ?? 0}', textAlign: TextAlign.right),
-        Text('${b?.fours ?? 0}', textAlign: TextAlign.right),
-        Text('${b?.sixes ?? 0}', textAlign: TextAlign.right),
-        Text(b == null || b.balls == 0 ? '-' : two(b.strikeRate), textAlign: TextAlign.right),
-      ]);
+      return TableRow(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Text(
+              id == null ? '—' : '${m.playerName(id)}${striker ? ' *' : ''}',
+              style: TextStyle(
+                fontWeight: striker ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+          Text(
+            '${b?.runs ?? 0}',
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text('${b?.balls ?? 0}', textAlign: TextAlign.right),
+          Text('${b?.fours ?? 0}', textAlign: TextAlign.right),
+          Text('${b?.sixes ?? 0}', textAlign: TextAlign.right),
+          Text(
+            b == null || b.balls == 0 ? '-' : two(b.strikeRate),
+            textAlign: TextAlign.right,
+          ),
+        ],
+      );
     }
 
     final bw = s.bowler(inn.bowlerId);
@@ -437,14 +557,16 @@ class _ScoringBodyState extends State<_ScoringBody> {
                 5: FixedColumnWidth(52),
               },
               children: [
-                TableRow(children: [
-                  Text('Batter', style: head),
-                  Text('R', textAlign: TextAlign.right, style: head),
-                  Text('B', textAlign: TextAlign.right, style: head),
-                  Text('4s', textAlign: TextAlign.right, style: head),
-                  Text('6s', textAlign: TextAlign.right, style: head),
-                  Text('SR', textAlign: TextAlign.right, style: head),
-                ]),
+                TableRow(
+                  children: [
+                    Text('Batter', style: head),
+                    Text('R', textAlign: TextAlign.right, style: head),
+                    Text('B', textAlign: TextAlign.right, style: head),
+                    Text('4s', textAlign: TextAlign.right, style: head),
+                    Text('6s', textAlign: TextAlign.right, style: head),
+                    Text('SR', textAlign: TextAlign.right, style: head),
+                  ],
+                ),
                 batRow(inn.strikerId, true),
                 batRow(inn.nonStrikerId, false),
               ],
@@ -459,25 +581,38 @@ class _ScoringBodyState extends State<_ScoringBody> {
                 5: FixedColumnWidth(52),
               },
               children: [
-                TableRow(children: [
-                  Text('Bowler', style: head),
-                  Text('O', textAlign: TextAlign.right, style: head),
-                  Text('M', textAlign: TextAlign.right, style: head),
-                  Text('R', textAlign: TextAlign.right, style: head),
-                  Text('W', textAlign: TextAlign.right, style: head),
-                  Text('Econ', textAlign: TextAlign.right, style: head),
-                ]),
-                TableRow(children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Text(inn.bowlerId == null ? '—' : m.playerName(inn.bowlerId)),
-                  ),
-                  Text(bw?.overs ?? '0.0', textAlign: TextAlign.right),
-                  Text('${bw?.maidens ?? 0}', textAlign: TextAlign.right),
-                  Text('${bw?.runs ?? 0}', textAlign: TextAlign.right),
-                  Text('${bw?.wickets ?? 0}', textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text(bw == null || bw.balls == 0 ? '-' : two(bw.economy), textAlign: TextAlign.right),
-                ]),
+                TableRow(
+                  children: [
+                    Text('Bowler', style: head),
+                    Text('O', textAlign: TextAlign.right, style: head),
+                    Text('M', textAlign: TextAlign.right, style: head),
+                    Text('R', textAlign: TextAlign.right, style: head),
+                    Text('W', textAlign: TextAlign.right, style: head),
+                    Text('Econ', textAlign: TextAlign.right, style: head),
+                  ],
+                ),
+                TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        inn.bowlerId == null ? '—' : m.playerName(inn.bowlerId),
+                      ),
+                    ),
+                    Text(bw?.overs ?? '0.0', textAlign: TextAlign.right),
+                    Text('${bw?.maidens ?? 0}', textAlign: TextAlign.right),
+                    Text('${bw?.runs ?? 0}', textAlign: TextAlign.right),
+                    Text(
+                      '${bw?.wickets ?? 0}',
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      bw == null || bw.balls == 0 ? '-' : two(bw.economy),
+                      textAlign: TextAlign.right,
+                    ),
+                  ],
+                ),
               ],
             ),
           ],
@@ -495,7 +630,11 @@ class _ScoringBodyState extends State<_ScoringBody> {
         Expanded(
           child: balls.isEmpty
               ? const Text('—')
-              : Wrap(spacing: 6, runSpacing: 6, children: [for (final b in balls) BallBubble(b)]),
+              : Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [for (final b in balls) BallBubble(b)],
+                ),
         ),
       ],
     );
@@ -511,15 +650,28 @@ class _ScoringBodyState extends State<_ScoringBody> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Text(m.resultText,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              Text(
+                m.resultText,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: OutlinedButton(onPressed: c.undo, child: const Text('Undo last ball'))),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: c.undo,
+                      child: const Text('Undo last ball'),
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: FilledButton(onPressed: () => _openScorecard(c), child: const Text('Scorecard'))),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => _openScorecard(c),
+                      child: const Text('Scorecard'),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -535,17 +687,32 @@ class _ScoringBodyState extends State<_ScoringBody> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              Text('Innings break', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Innings break',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 4),
-              Text('${m.teamName(first.battingTeamId)} scored ${first.runs}/${first.wickets}. '
-                  '${m.teamName(first.bowlingTeamId)} need ${first.runs + 1} to win.',
-                  textAlign: TextAlign.center),
+              Text(
+                '${m.teamName(first.battingTeamId)} scored ${first.runs}/${first.wickets}. '
+                '${m.teamName(first.bowlingTeamId)} need ${first.runs + 1} to win.',
+                textAlign: TextAlign.center,
+              ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: OutlinedButton(onPressed: c.undo, child: const Text('Undo last ball'))),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: c.undo,
+                      child: const Text('Undo last ball'),
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: FilledButton(onPressed: c.startSecondInnings, child: const Text('Start 2nd innings'))),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: c.startSecondInnings,
+                      child: const Text('Start 2nd innings'),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -561,37 +728,53 @@ class _ScoringBodyState extends State<_ScoringBody> {
           FilledButton.icon(
             onPressed: () => batter ? _chooseBatters(c) : _chooseBowler(c),
             icon: const Icon(Icons.person_add_alt_1),
-            label: Text(batter
-                ? (inn.strikerId == null && inn.nonStrikerId == null ? 'Select openers' : 'Select new batter')
-                : 'Select bowler'),
+            label: Text(
+              batter
+                  ? (inn.strikerId == null && inn.nonStrikerId == null
+                        ? 'Select openers'
+                        : 'Select new batter')
+                  : 'Select bowler',
+            ),
           ),
           if (inn.balls.isNotEmpty)
-            TextButton.icon(onPressed: c.undo, icon: const Icon(Icons.undo), label: const Text('Undo last ball')),
+            TextButton.icon(
+              onPressed: c.undo,
+              icon: const Icon(Icons.undo),
+              label: const Text('Undo last ball'),
+            ),
         ],
       );
     }
 
-    Widget runBtn(String label, VoidCallback onTap, {Color? color, Color? fg}) => SizedBox(
-          height: 56,
-          child: FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              backgroundColor: color,
-              foregroundColor: fg,
-              padding: EdgeInsets.zero,
-            ),
-            onPressed: onTap,
-            child: Text(label, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          ),
-        );
+    Widget runBtn(
+      String label,
+      VoidCallback onTap, {
+      Color? color,
+      Color? fg,
+    }) => SizedBox(
+      height: 56,
+      child: FilledButton.tonal(
+        style: FilledButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: fg,
+          padding: EdgeInsets.zero,
+        ),
+        onPressed: onTap,
+        child: Text(
+          label,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
 
     Widget extraBtn(String label, ExtraType t) => SizedBox(
-          height: 48,
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
-            onPressed: () => _extra(c, t),
-            child: Text(label),
-          ),
-        );
+      height: 48,
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(padding: EdgeInsets.zero),
+        onPressed: () => _extra(c, t),
+        child: Text(label),
+      ),
+    );
 
     return Column(
       children: [
@@ -603,10 +786,19 @@ class _ScoringBodyState extends State<_ScoringBody> {
           crossAxisSpacing: 10,
           childAspectRatio: 2.0,
           children: [
-            for (final r in [0, 1, 2, 3])
-              runBtn('$r', () => _scoreRuns(c, r)),
-            runBtn('4', () => _scoreRuns(c, 4), color: Colors.blue.shade600, fg: Colors.white),
-            runBtn('6', () => _scoreRuns(c, 6), color: Colors.purple.shade600, fg: Colors.white),
+            for (final r in [0, 1, 2, 3]) runBtn('$r', () => _scoreRuns(c, r)),
+            runBtn(
+              '4',
+              () => _scoreRuns(c, 4),
+              color: Colors.blue.shade600,
+              fg: Colors.white,
+            ),
+            runBtn(
+              '6',
+              () => _scoreRuns(c, 6),
+              color: Colors.purple.shade600,
+              fg: Colors.white,
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -628,7 +820,9 @@ class _ScoringBodyState extends State<_ScoringBody> {
               child: SizedBox(
                 height: 52,
                 child: FilledButton.icon(
-                  style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.red.shade600,
+                  ),
                   onPressed: () => _wicket(c),
                   icon: const Icon(Icons.close),
                   label: const Text('WICKET'),
