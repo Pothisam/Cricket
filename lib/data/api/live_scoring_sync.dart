@@ -29,7 +29,9 @@ class LiveScoringSync {
         await op();
       } on ApiException catch (e) {
         if (e.isUnauthenticated) return;
-        await _matches.putNow(m); // resync everything; notifications for this step are skipped
+        await _matches.putNow(
+          m,
+        ); // resync everything; notifications for this step are skipped
       } catch (_) {}
     });
   }
@@ -38,8 +40,12 @@ class LiveScoringSync {
     final inn = m.innings[inningsNo - 1];
     _enqueue(
       m,
-      () => _api.startInnings(m.id,
-          inningsNo: inningsNo, battingTeamId: inn.battingTeamId, bowlingTeamId: inn.bowlingTeamId),
+      () => _api.startInnings(
+        m.id,
+        inningsNo: inningsNo,
+        battingTeamId: inn.battingTeamId,
+        bowlingTeamId: inn.bowlingTeamId,
+      ),
     );
   }
 
@@ -48,11 +54,14 @@ class LiveScoringSync {
     final inn = m.innings[inningsNo - 1];
     _enqueue(
       m,
-      () => _api.patchInnings(m.id, inningsNo,
-          striker: inn.strikerId,
-          nonStriker: inn.nonStrikerId,
-          bowler: inn.bowlerId,
-          completed: inn.completed),
+      () => _api.patchInnings(
+        m.id,
+        inningsNo,
+        striker: inn.strikerId,
+        nonStriker: inn.nonStrikerId,
+        bowler: inn.bowlerId,
+        completed: inn.completed,
+      ),
     );
   }
 
@@ -66,15 +75,17 @@ class LiveScoringSync {
   void undoLastBall(CricketMatch m, int inningsNo) =>
       _enqueue(m, () => _api.undoLastBall(m.id, inningsNo).then((_) {}));
 
-  void complete(CricketMatch m) => _enqueue(
-        m,
-        () async {
-          await _api.completeMatch(m.id,
-              status: m.status, winnerId: m.winnerId, resultText: m.resultText);
-          await _state.clearDirty(SyncState.matches, [m.id]);
-        },
-      );
+  void complete(CricketMatch m) => _enqueue(m, () async {
+    await _api.completeMatch(
+      m.id,
+      status: m.status,
+      winnerId: m.winnerId,
+      resultText: m.resultText,
+    );
+    await _state.clearDirty(SyncState.matches, [m.id]);
+  });
 
   /// Full re-upload (used after structural changes that have no granular endpoint).
-  void resync(CricketMatch m) => _enqueue(m, () => _matches.putNow(m).then((_) {}));
+  void resync(CricketMatch m) =>
+      _enqueue(m, () => _matches.putNow(m).then((_) {}));
 }

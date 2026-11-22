@@ -26,24 +26,24 @@ class Innings {
   int get wickets => balls.where((b) => b.isWicket).length;
 
   Map<String, dynamic> toJson() => {
-        'battingTeamId': battingTeamId,
-        'bowlingTeamId': bowlingTeamId,
-        'balls': balls.map((b) => b.toJson()).toList(),
-        'striker': strikerId,
-        'nonStriker': nonStrikerId,
-        'bowler': bowlerId,
-        'completed': completed,
-      };
+    'battingTeamId': battingTeamId,
+    'bowlingTeamId': bowlingTeamId,
+    'balls': balls.map((b) => b.toJson()).toList(),
+    'striker': strikerId,
+    'nonStriker': nonStrikerId,
+    'bowler': bowlerId,
+    'completed': completed,
+  };
 
   factory Innings.fromJson(Map<String, dynamic> j) => Innings(
-        battingTeamId: j['battingTeamId'] as String,
-        bowlingTeamId: j['bowlingTeamId'] as String,
-        balls: (j['balls'] as List)
-            .map((e) => BallEvent.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        strikerId: j['striker'] as String?,
-        nonStrikerId: j['nonStriker'] as String?,
-        bowlerId: j['bowler'] as String?,
-        completed: j['completed'] as bool? ?? false,
-      );
+    battingTeamId: j['battingTeamId'] as String,
+    bowlingTeamId: j['bowlingTeamId'] as String,
+    balls: (j['balls'] as List)
+        .map((e) => BallEvent.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    strikerId: j['striker'] as String?,
+    nonStrikerId: j['nonStriker'] as String?,
+    bowlerId: j['bowler'] as String?,
+    completed: j['completed'] as bool? ?? false,
+  );
 }

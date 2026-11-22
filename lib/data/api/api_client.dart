@@ -31,8 +31,8 @@ class ApiException implements Exception {
 /// Thin JSON-over-HTTP client. Adds the Firebase ID token and `X-Device-Id`.
 class ApiClient {
   ApiClient({required this.deviceId, http.Client? client, FirebaseAuth? auth})
-      : _http = client ?? http.Client(),
-        _auth = auth;
+    : _http = client ?? http.Client(),
+      _auth = auth;
 
   final String deviceId;
   final http.Client _http;
@@ -80,7 +80,9 @@ class ApiClient {
       var res = await send();
       if (res.statusCode == 401 && auth) res = await send(forceToken: true);
       if (res.statusCode >= 400) {
-        debugPrint('API $method $path -> ${res.statusCode} ${utf8.decode(res.bodyBytes)}');
+        debugPrint(
+          'API $method $path -> ${res.statusCode} ${utf8.decode(res.bodyBytes)}',
+        );
       }
       return _decode(res);
     } on ApiException {
@@ -110,23 +112,33 @@ class ApiClient {
     final map = json is Map<String, dynamic> ? json : null;
     final err = map?['error'];
     if (res.statusCode >= 500) {
-      throw ApiException(res.statusCode, 'SERVER_ERROR',
-          'Server error (${res.statusCode}). The server could not complete the request, please try again later.',
-          body: map);
+      throw ApiException(
+        res.statusCode,
+        'SERVER_ERROR',
+        'Server error (${res.statusCode}). The server could not complete the request, please try again later.',
+        body: map,
+      );
     }
     throw ApiException(
       res.statusCode,
       err is Map ? (err['code'] as String? ?? 'ERROR') : 'ERROR',
-      err is Map ? (err['message'] as String? ?? 'Request failed') : 'Request failed (${res.statusCode})',
+      err is Map
+          ? (err['message'] as String? ?? 'Request failed')
+          : 'Request failed (${res.statusCode})',
       body: map,
     );
   }
 
-  Future<dynamic> get(String p, {Map<String, String?>? query, bool auth = true}) =>
-      request('GET', p, query: query, auth: auth);
+  Future<dynamic> get(
+    String p, {
+    Map<String, String?>? query,
+    bool auth = true,
+  }) => request('GET', p, query: query, auth: auth);
   Future<dynamic> post(String p, {Object? body, bool auth = true}) =>
       request('POST', p, body: body, auth: auth);
-  Future<dynamic> put(String p, {Object? body}) => request('PUT', p, body: body);
-  Future<dynamic> patch(String p, {Object? body}) => request('PATCH', p, body: body);
+  Future<dynamic> put(String p, {Object? body}) =>
+      request('PUT', p, body: body);
+  Future<dynamic> patch(String p, {Object? body}) =>
+      request('PATCH', p, body: body);
   Future<dynamic> delete(String p) => request('DELETE', p);
 }

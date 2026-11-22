@@ -801,3 +801,15 @@ Implemented by `Database/CricketDB_Upgrade_002_Memberships.sql`.
 | GET | `/me/matches/{ownerId}/{matchId}` | Full scorecard (participants only) |
 
 Notification `team_added`: sent to a registered user when a player linked to them is newly added to a squad.
+
+---
+
+## 16. Matches between teams of different users
+
+Implemented by `Database/CricketDB_Upgrade_003_MatchInvitations.sql`.
+
+**Table** `match_invitations`: `id`, `from_user_id`, `from_team_id`, `from_team_name/short`, `to_user_id`, `to_team_id`, `to_team_name/short`, `overs`, `scheduled_at`, `venue`, `message`, `status` (`pending|accepted|rejected|cancelled|started`), `match_id`, `created_at`, `updated_at`, `responded_at`. **Columns** `matches.invitation_id`, `matches.opponent_user_id`. No version / audit columns.
+
+**Flow**: search a team of another user (`GET /teams/search?q=`) -> `POST /match-invitations` (pending, the other owner gets a `match_invite` notification) -> the other owner accepts or rejects (`POST .../accept|reject`, the scorer gets `match_invite_response`) -> the accepted invitation is the scheduled match, visible to both owners (`GET /match-invitations`) -> the scorer starts it (`GET .../opponent-squad` to pick the XIs, then the usual `PUT /matches/{id}` with `invitationId`) -> status `started`; the opponent sees the live match and scorecard in `GET /me/matches`, `GET /me/matches/{ownerId}/{matchId}`.
+
+**Rules**: own teams cannot be challenged; one `pending` invitation per pair of teams; only the scorer (owner of the match) scores; `cancel` by the sender while pending, by either side once accepted.

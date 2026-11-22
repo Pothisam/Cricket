@@ -1,18 +1,19 @@
 /// Response models for endpoints that are not already covered by the app's own
 /// Team / Player / CricketMatch models (those use their own toJson / fromJson).
 
-DateTime? _dt(Object? v) => v == null ? null : DateTime.parse(v as String).toLocal();
+DateTime? _dt(Object? v) =>
+    v == null ? null : DateTime.parse(v as String).toLocal();
 
 class ApiUser {
   ApiUser.fromJson(Map<String, dynamic> j)
-      : id = j['id'] as String,
-        email = j['email'] as String?,
-        phoneNumber = j['phoneNumber'] as String?,
-        displayName = j['displayName'] as String?,
-        photoUrl = j['photoUrl'] as String?,
-        authProvider = j['authProvider'] as String? ?? '',
-        createdAt = _dt(j['createdAt']),
-        lastLoginAt = _dt(j['lastLoginAt']);
+    : id = j['id'] as String,
+      email = j['email'] as String?,
+      phoneNumber = j['phoneNumber'] as String?,
+      displayName = j['displayName'] as String?,
+      photoUrl = j['photoUrl'] as String?,
+      authProvider = j['authProvider'] as String? ?? '',
+      createdAt = _dt(j['createdAt']),
+      lastLoginAt = _dt(j['lastLoginAt']);
 
   final String id;
   final String? email, phoneNumber, displayName, photoUrl;
@@ -33,10 +34,17 @@ class NotificationPrefs {
     this.quietHoursEnd,
   });
 
-  bool loginAlerts, matchStart, boundaries, wickets, milestones, inningsEnd, matchResult;
+  bool loginAlerts,
+      matchStart,
+      boundaries,
+      wickets,
+      milestones,
+      inningsEnd,
+      matchResult;
   String? quietHoursStart, quietHoursEnd; // "HH:mm"
 
-  factory NotificationPrefs.fromJson(Map<String, dynamic> j) => NotificationPrefs(
+  factory NotificationPrefs.fromJson(Map<String, dynamic> j) =>
+      NotificationPrefs(
         loginAlerts: j['loginAlerts'] as bool? ?? true,
         matchStart: j['matchStart'] as bool? ?? true,
         boundaries: j['boundaries'] as bool? ?? true,
@@ -49,25 +57,26 @@ class NotificationPrefs {
       );
 
   Map<String, dynamic> toJson() => {
-        'loginAlerts': loginAlerts,
-        'matchStart': matchStart,
-        'boundaries': boundaries,
-        'wickets': wickets,
-        'milestones': milestones,
-        'inningsEnd': inningsEnd,
-        'matchResult': matchResult,
-        'quietHoursStart': quietHoursStart,
-        'quietHoursEnd': quietHoursEnd,
-      };
+    'loginAlerts': loginAlerts,
+    'matchStart': matchStart,
+    'boundaries': boundaries,
+    'wickets': wickets,
+    'milestones': milestones,
+    'inningsEnd': inningsEnd,
+    'matchResult': matchResult,
+    'quietHoursStart': quietHoursStart,
+    'quietHoursEnd': quietHoursEnd,
+  };
 }
 
 class SessionResult {
   SessionResult.fromJson(Map<String, dynamic> j)
-      : user = ApiUser.fromJson(j['user'] as Map<String, dynamic>),
-        isNewUser = j['isNewUser'] as bool? ?? false,
-        deviceId = (j['device'] as Map?)?['id'] as int?,
-        preferences = NotificationPrefs.fromJson(
-            Map<String, dynamic>.from(j['preferences'] as Map? ?? const {}));
+    : user = ApiUser.fromJson(j['user'] as Map<String, dynamic>),
+      isNewUser = j['isNewUser'] as bool? ?? false,
+      deviceId = (j['device'] as Map?)?['id'] as int?,
+      preferences = NotificationPrefs.fromJson(
+        Map<String, dynamic>.from(j['preferences'] as Map? ?? const {}),
+      );
 
   final ApiUser user;
   final bool isNewUser;
@@ -77,13 +86,13 @@ class SessionResult {
 
 class ApiDevice {
   ApiDevice.fromJson(Map<String, dynamic> j)
-      : id = (j['id'] as num).toInt(),
-        platform = j['platform'] as String? ?? '',
-        deviceModel = j['deviceModel'] as String?,
-        appVersion = j['appVersion'] as String?,
-        notificationsEnabled = j['notificationsEnabled'] as bool? ?? true,
-        isCurrent = j['isCurrent'] as bool? ?? false,
-        lastSeenAt = _dt(j['lastSeenAt']);
+    : id = (j['id'] as num).toInt(),
+      platform = j['platform'] as String? ?? '',
+      deviceModel = j['deviceModel'] as String?,
+      appVersion = j['appVersion'] as String?,
+      notificationsEnabled = j['notificationsEnabled'] as bool? ?? true,
+      isCurrent = j['isCurrent'] as bool? ?? false,
+      lastSeenAt = _dt(j['lastSeenAt']);
 
   final int id;
   final String platform;
@@ -94,13 +103,15 @@ class ApiDevice {
 
 class ApiNotification {
   ApiNotification.fromJson(Map<String, dynamic> j)
-      : id = (j['id'] as num).toInt(),
-        type = j['type'] as String? ?? '',
-        title = j['title'] as String? ?? '',
-        body = j['body'] as String? ?? '',
-        data = j['data'] == null ? null : Map<String, dynamic>.from(j['data'] as Map),
-        readAt = _dt(j['readAt']),
-        createdAt = _dt(j['createdAt']) ?? DateTime.now();
+    : id = (j['id'] as num).toInt(),
+      type = j['type'] as String? ?? '',
+      title = j['title'] as String? ?? '',
+      body = j['body'] as String? ?? '',
+      data = j['data'] == null
+          ? null
+          : Map<String, dynamic>.from(j['data'] as Map),
+      readAt = _dt(j['readAt']),
+      createdAt = _dt(j['createdAt']) ?? DateTime.now();
 
   final int id;
   final String type, title, body;
@@ -119,12 +130,12 @@ class Inbox {
 
 class InningsSummaryApi {
   InningsSummaryApi.fromJson(Map<String, dynamic> j)
-      : inningsNo = j['inningsNo'] as int,
-        battingTeamId = j['battingTeamId'] as String? ?? '',
-        runs = j['runs'] as int? ?? 0,
-        wickets = j['wickets'] as int? ?? 0,
-        legalBalls = j['legalBalls'] as int? ?? 0,
-        completed = j['completed'] as bool? ?? false;
+    : inningsNo = j['inningsNo'] as int,
+      battingTeamId = j['battingTeamId'] as String? ?? '',
+      runs = j['runs'] as int? ?? 0,
+      wickets = j['wickets'] as int? ?? 0,
+      legalBalls = j['legalBalls'] as int? ?? 0,
+      completed = j['completed'] as bool? ?? false;
 
   final int inningsNo, runs, wickets, legalBalls;
   final String battingTeamId;
@@ -134,26 +145,35 @@ class InningsSummaryApi {
 
 class MatchSummary {
   MatchSummary.fromJson(Map<String, dynamic> j)
-      : id = j['id'] as String,
-        ownerId = j['ownerId'] as String? ?? '',
-        status = j['status'] as String? ?? 'live',
-        date = _dt(j['date']) ?? DateTime.now(),
-        venue = j['venue'] as String?,
-        overs = j['overs'] as int? ?? 0,
-        teamAName = (j['teamA'] as Map?)?['name'] as String? ?? '',
-        teamBName = (j['teamB'] as Map?)?['name'] as String? ?? '',
-        teamAShort = (j['teamA'] as Map?)?['short'] as String? ?? '',
-        teamBShort = (j['teamB'] as Map?)?['short'] as String? ?? '',
-        teamAId = (j['teamA'] as Map?)?['id'] as String? ?? '',
-        teamBId = (j['teamB'] as Map?)?['id'] as String? ?? '',
-        tossText = j['tossText'] as String? ?? '',
-        resultText = j['resultText'] as String?,
-        innings = [
-          for (final i in (j['innings'] as List? ?? const []))
-            InningsSummaryApi.fromJson(Map<String, dynamic>.from(i as Map))
-        ];
+    : id = j['id'] as String,
+      ownerId = j['ownerId'] as String? ?? '',
+      status = j['status'] as String? ?? 'live',
+      date = _dt(j['date']) ?? DateTime.now(),
+      venue = j['venue'] as String?,
+      overs = j['overs'] as int? ?? 0,
+      teamAName = (j['teamA'] as Map?)?['name'] as String? ?? '',
+      teamBName = (j['teamB'] as Map?)?['name'] as String? ?? '',
+      teamAShort = (j['teamA'] as Map?)?['short'] as String? ?? '',
+      teamBShort = (j['teamB'] as Map?)?['short'] as String? ?? '',
+      teamAId = (j['teamA'] as Map?)?['id'] as String? ?? '',
+      teamBId = (j['teamB'] as Map?)?['id'] as String? ?? '',
+      tossText = j['tossText'] as String? ?? '',
+      resultText = j['resultText'] as String?,
+      innings = [
+        for (final i in (j['innings'] as List? ?? const []))
+          InningsSummaryApi.fromJson(Map<String, dynamic>.from(i as Map)),
+      ];
 
-  final String id, ownerId, status, teamAName, teamBName, teamAShort, teamBShort, teamAId, teamBId, tossText;
+  final String id,
+      ownerId,
+      status,
+      teamAName,
+      teamBName,
+      teamAShort,
+      teamBShort,
+      teamAId,
+      teamBId,
+      tossText;
   final DateTime date;
   final String? venue, resultText;
   final int overs;
@@ -163,9 +183,9 @@ class MatchSummary {
 
 class PlayerStats {
   PlayerStats.fromJson(Map<String, dynamic> j)
-      : matches = j['matches'] as int? ?? 0,
-        batting = Map<String, dynamic>.from(j['batting'] as Map? ?? const {}),
-        bowling = Map<String, dynamic>.from(j['bowling'] as Map? ?? const {});
+    : matches = j['matches'] as int? ?? 0,
+      batting = Map<String, dynamic>.from(j['batting'] as Map? ?? const {}),
+      bowling = Map<String, dynamic>.from(j['bowling'] as Map? ?? const {});
 
   final int matches;
   final Map<String, dynamic> batting, bowling;
@@ -173,35 +193,35 @@ class PlayerStats {
 
 class TeamStats {
   TeamStats.fromJson(Map<String, dynamic> j)
-      : played = j['played'] as int? ?? 0,
-        won = j['won'] as int? ?? 0,
-        lost = j['lost'] as int? ?? 0,
-        tied = j['tied'] as int? ?? 0,
-        noResult = j['noResult'] as int? ?? 0;
+    : played = j['played'] as int? ?? 0,
+      won = j['won'] as int? ?? 0,
+      lost = j['lost'] as int? ?? 0,
+      tied = j['tied'] as int? ?? 0,
+      noResult = j['noResult'] as int? ?? 0;
 
   final int played, won, lost, tied, noResult;
 }
 
 class ShareInfo {
   ShareInfo.fromJson(Map<String, dynamic> j)
-      : shareCode = j['shareCode'] as String,
-        url = j['url'] as String? ?? '';
+    : shareCode = j['shareCode'] as String,
+      url = j['url'] as String? ?? '';
   final String shareCode, url;
 }
 
 class ServerConfig {
   ServerConfig.fromJson(Map<String, dynamic> j)
-      : minAppVersion = j['minAppVersion'] as String? ?? '1.0.0',
-        features = Map<String, bool>.from(j['features'] as Map? ?? const {});
+    : minAppVersion = j['minAppVersion'] as String? ?? '1.0.0',
+      features = Map<String, bool>.from(j['features'] as Map? ?? const {});
   final String minAppVersion;
   final Map<String, bool> features;
 }
 
 class LiveInningsTotals {
   LiveInningsTotals.fromJson(Map<String, dynamic> j)
-      : runs = j['runs'] as int? ?? 0,
-        wickets = j['wickets'] as int? ?? 0,
-        legalBalls = j['legalBalls'] as int? ?? 0;
+    : runs = j['runs'] as int? ?? 0,
+      wickets = j['wickets'] as int? ?? 0,
+      legalBalls = j['legalBalls'] as int? ?? 0;
   final int runs, wickets, legalBalls;
 }
 
@@ -251,57 +271,57 @@ class PlayerProfile {
   int? jerseyNumber;
 
   factory PlayerProfile.fromJson(Map<String, dynamic> j) => PlayerProfile(
-        userId: j['userId'] as String? ?? '',
-        playerId: j['playerId'] as String? ?? '',
-        email: j['email'] as String?,
-        phoneNumber: j['phoneNumber'] as String?,
-        photoUrl: j['photoUrl'] as String?,
-        displayName: j['displayName'] as String? ?? '',
-        gender: j['gender'] as String?,
-        dateOfBirth: j['dateOfBirth'] as String?,
-        city: j['city'] as String?,
-        isDiscoverable: j['isDiscoverable'] as bool? ?? true,
-        role: j['role'] as String? ?? 'batter',
-        battingStyle: j['battingStyle'] as String? ?? 'Right-hand bat',
-        bowlingStyle: j['bowlingStyle'] as String? ?? 'None',
-        heightCm: (j['heightCm'] as num?)?.toDouble(),
-        weightKg: (j['weightKg'] as num?)?.toDouble(),
-        jerseyNumber: (j['jerseyNumber'] as num?)?.toInt(),
-      );
+    userId: j['userId'] as String? ?? '',
+    playerId: j['playerId'] as String? ?? '',
+    email: j['email'] as String?,
+    phoneNumber: j['phoneNumber'] as String?,
+    photoUrl: j['photoUrl'] as String?,
+    displayName: j['displayName'] as String? ?? '',
+    gender: j['gender'] as String?,
+    dateOfBirth: j['dateOfBirth'] as String?,
+    city: j['city'] as String?,
+    isDiscoverable: j['isDiscoverable'] as bool? ?? true,
+    role: j['role'] as String? ?? 'batter',
+    battingStyle: j['battingStyle'] as String? ?? 'Right-hand bat',
+    bowlingStyle: j['bowlingStyle'] as String? ?? 'None',
+    heightCm: (j['heightCm'] as num?)?.toDouble(),
+    weightKg: (j['weightKg'] as num?)?.toDouble(),
+    jerseyNumber: (j['jerseyNumber'] as num?)?.toInt(),
+  );
 
   /// Body of `PUT /me/profile` (the profile is replaced).
   Map<String, dynamic> toJson() => {
-        'displayName': displayName,
-        'gender': gender,
-        'dateOfBirth': dateOfBirth,
-        'city': city,
-        'phoneNumber': phoneNumber,
-        'photoUrl': photoUrl,
-        'isDiscoverable': isDiscoverable,
-        'role': role,
-        'battingStyle': battingStyle,
-        'bowlingStyle': bowlingStyle,
-        'heightCm': heightCm,
-        'weightKg': weightKg,
-        'jerseyNumber': jerseyNumber,
-      };
+    'displayName': displayName,
+    'gender': gender,
+    'dateOfBirth': dateOfBirth,
+    'city': city,
+    'phoneNumber': phoneNumber,
+    'photoUrl': photoUrl,
+    'isDiscoverable': isDiscoverable,
+    'role': role,
+    'battingStyle': battingStyle,
+    'bowlingStyle': bowlingStyle,
+    'heightCm': heightCm,
+    'weightKg': weightKg,
+    'jerseyNumber': jerseyNumber,
+  };
 }
 
 /// One hit of `GET /players/search`.
 class PlayerSearchItem {
   PlayerSearchItem.fromJson(Map<String, dynamic> j)
-      : source = j['source'] as String? ?? 'mine',
-        playerId = j['playerId'] as String?,
-        userId = j['userId'] as String?,
-        name = j['name'] as String? ?? '',
-        email = j['email'] as String?,
-        photoUrl = j['photoUrl'] as String?,
-        role = j['role'] as String? ?? 'batter',
-        battingStyle = j['battingStyle'] as String? ?? '',
-        bowlingStyle = j['bowlingStyle'] as String? ?? '',
-        city = j['city'] as String?,
-        isRegistered = j['isRegistered'] as bool? ?? false,
-        isSelf = j['isSelf'] as bool? ?? false;
+    : source = j['source'] as String? ?? 'mine',
+      playerId = j['playerId'] as String?,
+      userId = j['userId'] as String?,
+      name = j['name'] as String? ?? '',
+      email = j['email'] as String?,
+      photoUrl = j['photoUrl'] as String?,
+      role = j['role'] as String? ?? 'batter',
+      battingStyle = j['battingStyle'] as String? ?? '',
+      bowlingStyle = j['bowlingStyle'] as String? ?? '',
+      city = j['city'] as String?,
+      isRegistered = j['isRegistered'] as bool? ?? false,
+      isSelf = j['isSelf'] as bool? ?? false;
 
   /// `mine` = already in my player list, `user` = a registered user I can add.
   final String source;
@@ -314,17 +334,17 @@ class PlayerSearchItem {
 /// A team created by someone else in which I am a member (`GET /me/joined-teams`).
 class JoinedTeam {
   JoinedTeam.fromJson(Map<String, dynamic> j)
-      : ownerId = j['ownerId'] as String,
-        ownerName = j['ownerName'] as String?,
-        teamId = j['teamId'] as String,
-        name = j['name'] as String? ?? '',
-        shortName = j['shortName'] as String? ?? '',
-        colorIndex = (j['colorIndex'] as num?)?.toInt() ?? 0,
-        playerCount = (j['playerCount'] as num?)?.toInt() ?? 0,
-        squad = [
-          for (final m in (j['squad'] as List? ?? const []))
-            SquadMember.fromJson(Map<String, dynamic>.from(m as Map))
-        ];
+    : ownerId = j['ownerId'] as String,
+      ownerName = j['ownerName'] as String?,
+      teamId = j['teamId'] as String,
+      name = j['name'] as String? ?? '',
+      shortName = j['shortName'] as String? ?? '',
+      colorIndex = (j['colorIndex'] as num?)?.toInt() ?? 0,
+      playerCount = (j['playerCount'] as num?)?.toInt() ?? 0,
+      squad = [
+        for (final m in (j['squad'] as List? ?? const []))
+          SquadMember.fromJson(Map<String, dynamic>.from(m as Map)),
+      ];
 
   final String ownerId, teamId, name, shortName;
   final String? ownerName;
@@ -336,15 +356,78 @@ class JoinedTeam {
 
 class SquadMember {
   SquadMember.fromJson(Map<String, dynamic> j)
-      : name = j['name'] as String? ?? '',
-        role = j['role'] as String? ?? 'batter',
-        battingStyle = j['battingStyle'] as String? ?? '',
-        bowlingStyle = j['bowlingStyle'] as String? ?? '',
-        photoUrl = j['photoUrl'] as String?,
-        isRegistered = j['isRegistered'] as bool? ?? false,
-        isMe = j['isMe'] as bool? ?? false;
+    : name = j['name'] as String? ?? '',
+      role = j['role'] as String? ?? 'batter',
+      battingStyle = j['battingStyle'] as String? ?? '',
+      bowlingStyle = j['bowlingStyle'] as String? ?? '',
+      photoUrl = j['photoUrl'] as String?,
+      isRegistered = j['isRegistered'] as bool? ?? false,
+      isMe = j['isMe'] as bool? ?? false,
+      playerId = j['playerId'] as String? ?? '';
 
+  /// Id in the squad owner's player list.
+  final String playerId;
   final String name, role, battingStyle, bowlingStyle;
   final String? photoUrl;
   final bool isRegistered, isMe;
+}
+
+/// A team of another user found by name (`GET /teams/search`).
+class TeamSearchItem {
+  TeamSearchItem.fromJson(Map<String, dynamic> j)
+    : ownerId = j['ownerId'] as String,
+      ownerName = j['ownerName'] as String?,
+      teamId = j['teamId'] as String,
+      name = j['name'] as String? ?? '',
+      shortName = j['shortName'] as String? ?? '',
+      colorIndex = (j['colorIndex'] as num?)?.toInt() ?? 0,
+      playerCount = (j['playerCount'] as num?)?.toInt() ?? 0;
+
+  final String ownerId, teamId, name, shortName;
+  final String? ownerName;
+  final int colorIndex, playerCount;
+}
+
+/// A match challenge between two teams of different users (`/match-invitations`).
+/// Once accepted it is the scheduled match, visible to both owners.
+class MatchInvitation {
+  MatchInvitation.fromJson(Map<String, dynamic> j)
+    : id = j['id'] as String,
+      outgoing = j['direction'] == 'outgoing',
+      status = j['status'] as String? ?? 'pending',
+      fromUserId = j['fromUserId'] as String? ?? '',
+      fromUserName = j['fromUserName'] as String?,
+      fromTeamId = (j['fromTeam'] as Map?)?['id'] as String? ?? '',
+      fromTeamName = (j['fromTeam'] as Map?)?['name'] as String? ?? '',
+      fromTeamShort = (j['fromTeam'] as Map?)?['short'] as String? ?? '',
+      toUserId = j['toUserId'] as String? ?? '',
+      toUserName = j['toUserName'] as String?,
+      toTeamId = (j['toTeam'] as Map?)?['id'] as String? ?? '',
+      toTeamName = (j['toTeam'] as Map?)?['name'] as String? ?? '',
+      toTeamShort = (j['toTeam'] as Map?)?['short'] as String? ?? '',
+      overs = (j['overs'] as num?)?.toInt() ?? 20,
+      scheduledAt = _dt(j['scheduledAt']),
+      venue = j['venue'] as String?,
+      message = j['message'] as String?,
+      matchId = j['matchId'] as String?,
+      createdAt = _dt(j['createdAt']) ?? DateTime.now();
+
+  final String id, status, fromUserId, fromTeamId, fromTeamName, fromTeamShort;
+  final String toUserId, toTeamId, toTeamName, toTeamShort;
+  final String? fromUserName, toUserName, venue, message, matchId;
+
+  /// I sent it: I am the scorer and I start the match.
+  final bool outgoing;
+  final int overs;
+  final DateTime? scheduledAt;
+  final DateTime createdAt;
+
+  bool get isPending => status == 'pending';
+  bool get isAccepted => status == 'accepted';
+  bool get isStarted => status == 'started';
+
+  /// The other side.
+  String get otherTeamName => outgoing ? toTeamName : fromTeamName;
+  String? get otherOwnerName => outgoing ? toUserName : fromUserName;
+  String get title => '$fromTeamShort vs $toTeamShort';
 }

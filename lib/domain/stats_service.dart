@@ -17,7 +17,11 @@ class PlayerCareer {
   int innings = 0, notOuts = 0, runs = 0, balls = 0, fours = 0, sixes = 0;
   int highScore = 0, fifties = 0, hundreds = 0, ducks = 0;
   bool highScoreNotOut = false;
-  int bowlInnings = 0, ballsBowled = 0, runsConceded = 0, wickets = 0, maidens = 0;
+  int bowlInnings = 0,
+      ballsBowled = 0,
+      runsConceded = 0,
+      wickets = 0,
+      maidens = 0;
   int bestWickets = 0, bestRuns = 0;
   int catches = 0, stumpings = 0, runOuts = 0;
   final List<PlayerMatchRecord> records = [];
@@ -29,7 +33,8 @@ class PlayerCareer {
   double get bowlingAverage => wickets == 0 ? 0 : runsConceded / wickets;
   String get oversBowled => oversText(ballsBowled);
   String get bestBowling => bowlInnings == 0 ? '-' : '$bestWickets/$bestRuns';
-  String get highScoreText => innings == 0 ? '-' : '$highScore${highScoreNotOut ? '*' : ''}';
+  String get highScoreText =>
+      innings == 0 ? '-' : '$highScore${highScoreNotOut ? '*' : ''}';
 }
 
 class TeamRecord {
@@ -47,8 +52,9 @@ class TeamRecord {
 /// Aggregates career and team statistics from finished matches.
 class CricketStats {
   CricketStats(List<CricketMatch> matches) {
-    final done = matches.where((m) => m.status == MatchStatus.completed).toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
+    final done =
+        matches.where((m) => m.status == MatchStatus.completed).toList()
+          ..sort((a, b) => a.date.compareTo(b.date));
     for (final m in done) {
       _addMatch(m);
     }
@@ -160,9 +166,9 @@ class CricketStats {
   void _addTeams(CricketMatch m) {
     for (final id in [m.teamAId, m.teamBId]) {
       final t = teams.putIfAbsent(
-          id,
-          () => TeamRecord(
-              id, m.teamName(id), m.teamShort(id)));
+        id,
+        () => TeamRecord(id, m.teamName(id), m.teamShort(id)),
+      );
       t.name = m.teamName(id);
       t.shortName = m.teamShort(id);
       t.played++;
@@ -191,11 +197,10 @@ class CricketStats {
           .toList();
 
   List<PlayerCareer> topWicketTakers([int n = 10]) =>
-      (players.values.where((p) => p.wickets > 0).toList()
-            ..sort((a, b) {
-              final c = b.wickets.compareTo(a.wickets);
-              return c != 0 ? c : a.economy.compareTo(b.economy);
-            }))
+      (players.values.where((p) => p.wickets > 0).toList()..sort((a, b) {
+            final c = b.wickets.compareTo(a.wickets);
+            return c != 0 ? c : a.economy.compareTo(b.economy);
+          }))
           .take(n)
           .toList();
 

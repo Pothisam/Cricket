@@ -23,6 +23,8 @@ class CricketMatch {
     this.status = MatchStatus.live,
     this.winnerId,
     this.resultText = '',
+    this.invitationId,
+    this.opponentUserId,
   }) : innings = innings ?? [];
 
   final String id;
@@ -45,6 +47,12 @@ class CricketMatch {
   String? winnerId;
   String resultText;
 
+  /// Set when the match is against a team of another user (started from an accepted invitation).
+  final String? invitationId;
+
+  /// Owner of team B in such a match. Only the scorer (the owner of this match) can score it.
+  final String? opponentUserId;
+
   bool get isLive => status == MatchStatus.live;
 
   String teamName(String id) => id == teamAId ? teamAName : teamBName;
@@ -66,48 +74,51 @@ class CricketMatch {
       '${teamName(tossWinnerId)} won the toss and chose to ${electedToBat ? 'bat' : 'bowl'}';
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'teamAId': teamAId,
-        'teamBId': teamBId,
-        'teamAName': teamAName,
-        'teamBName': teamBName,
-        'teamAShort': teamAShort,
-        'teamBShort': teamBShort,
-        'overs': overs,
-        'tossWinnerId': tossWinnerId,
-        'electedToBat': electedToBat,
-        'teamAPlayers': teamAPlayers,
-        'teamBPlayers': teamBPlayers,
-        'playerNames': playerNames,
-        'date': date.toIso8601String(),
-        'venue': venue,
-        'innings': innings.map((i) => i.toJson()).toList(),
-        'status': status.name,
-        'winnerId': winnerId,
-        'resultText': resultText,
-      };
+    'id': id,
+    'teamAId': teamAId,
+    'teamBId': teamBId,
+    'teamAName': teamAName,
+    'teamBName': teamBName,
+    'teamAShort': teamAShort,
+    'teamBShort': teamBShort,
+    'overs': overs,
+    'tossWinnerId': tossWinnerId,
+    'electedToBat': electedToBat,
+    'teamAPlayers': teamAPlayers,
+    'teamBPlayers': teamBPlayers,
+    'playerNames': playerNames,
+    'date': date.toIso8601String(),
+    'venue': venue,
+    'innings': innings.map((i) => i.toJson()).toList(),
+    'status': status.name,
+    'winnerId': winnerId,
+    'resultText': resultText,
+    'invitationId': invitationId,
+  };
 
   factory CricketMatch.fromJson(Map<String, dynamic> j) => CricketMatch(
-        id: j['id'] as String,
-        teamAId: j['teamAId'] as String,
-        teamBId: j['teamBId'] as String,
-        teamAName: j['teamAName'] as String,
-        teamBName: j['teamBName'] as String,
-        teamAShort: j['teamAShort'] as String,
-        teamBShort: j['teamBShort'] as String,
-        overs: j['overs'] as int,
-        tossWinnerId: j['tossWinnerId'] as String,
-        electedToBat: j['electedToBat'] as bool,
-        teamAPlayers: List<String>.from(j['teamAPlayers'] as List),
-        teamBPlayers: List<String>.from(j['teamBPlayers'] as List),
-        playerNames: Map<String, String>.from(j['playerNames'] as Map),
-        date: DateTime.parse(j['date'] as String),
-        venue: j['venue'] as String? ?? '',
-        innings: (j['innings'] as List)
-            .map((e) => Innings.fromJson(Map<String, dynamic>.from(e as Map)))
-            .toList(),
-        status: MatchStatus.values.byName(j['status'] as String),
-        winnerId: j['winnerId'] as String?,
-        resultText: j['resultText'] as String? ?? '',
-      );
+    id: j['id'] as String,
+    teamAId: j['teamAId'] as String,
+    teamBId: j['teamBId'] as String,
+    teamAName: j['teamAName'] as String,
+    teamBName: j['teamBName'] as String,
+    teamAShort: j['teamAShort'] as String,
+    teamBShort: j['teamBShort'] as String,
+    overs: j['overs'] as int,
+    tossWinnerId: j['tossWinnerId'] as String,
+    electedToBat: j['electedToBat'] as bool,
+    teamAPlayers: List<String>.from(j['teamAPlayers'] as List),
+    teamBPlayers: List<String>.from(j['teamBPlayers'] as List),
+    playerNames: Map<String, String>.from(j['playerNames'] as Map),
+    date: DateTime.parse(j['date'] as String),
+    venue: j['venue'] as String? ?? '',
+    innings: (j['innings'] as List)
+        .map((e) => Innings.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList(),
+    status: MatchStatus.values.byName(j['status'] as String),
+    winnerId: j['winnerId'] as String?,
+    resultText: j['resultText'] as String? ?? '',
+    invitationId: j['invitationId'] as String?,
+    opponentUserId: j['opponentUserId'] as String?,
+  );
 }

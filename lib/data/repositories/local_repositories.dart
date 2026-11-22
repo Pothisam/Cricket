@@ -14,7 +14,8 @@ class _Collection<T> {
   final Map<String, dynamic> Function(T) _to;
   final String Function(T) _id;
 
-  Future<List<T>> getAll() async => (await _store.readList(_key)).map(_from).toList();
+  Future<List<T>> getAll() async =>
+      (await _store.readList(_key)).map(_from).toList();
 
   Future<void> save(T item) async {
     final all = await getAll();
@@ -36,7 +37,13 @@ class _Collection<T> {
 
 class LocalTeamRepository implements TeamRepository {
   LocalTeamRepository(LocalStore s)
-      : _c = _Collection(s, 'teams', Team.fromJson, (t) => t.toJson(), (t) => t.id);
+    : _c = _Collection(
+        s,
+        'teams',
+        Team.fromJson,
+        (t) => t.toJson(),
+        (t) => t.id,
+      );
   final _Collection<Team> _c;
 
   @override
@@ -49,7 +56,13 @@ class LocalTeamRepository implements TeamRepository {
 
 class LocalPlayerRepository implements PlayerRepository {
   LocalPlayerRepository(LocalStore s)
-      : _c = _Collection(s, 'players', Player.fromJson, (p) => p.toJson(), (p) => p.id);
+    : _c = _Collection(
+        s,
+        'players',
+        Player.fromJson,
+        (p) => p.toJson(),
+        (p) => p.id,
+      );
   final _Collection<Player> _c;
 
   @override
@@ -62,8 +75,13 @@ class LocalPlayerRepository implements PlayerRepository {
 
 class LocalMatchRepository implements MatchRepository {
   LocalMatchRepository(LocalStore s)
-      : _c = _Collection(
-            s, 'matches', CricketMatch.fromJson, (m) => m.toJson(), (m) => m.id);
+    : _c = _Collection(
+        s,
+        'matches',
+        CricketMatch.fromJson,
+        (m) => m.toJson(),
+        (m) => m.id,
+      );
   final _Collection<CricketMatch> _c;
 
   @override

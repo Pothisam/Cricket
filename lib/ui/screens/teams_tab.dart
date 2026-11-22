@@ -25,7 +25,9 @@ class TeamsTab extends StatelessWidget {
         label: const Text('Add team'),
       ),
       body: PullToRefresh(
-        child: (tc.teams.isEmpty && context.watch<MembershipController>().teams.isEmpty)
+        child:
+            (tc.teams.isEmpty &&
+                context.watch<MembershipController>().teams.isEmpty)
             ? const RefreshableEmpty(
                 child: EmptyState(
                   icon: Icons.groups,

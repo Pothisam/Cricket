@@ -13,16 +13,43 @@ import '../state/teams_controller.dart';
 class SampleData {
   static const _names = {
     'Royal Strikers': [
-      'Arjun Rao', 'Vikram Shah', 'Rohan Mehta', 'Karan Iyer', 'Sameer Khan',
-      'Dev Patel', 'Nikhil Joshi', 'Imran Ali', 'Pranav Nair', 'Tarun Das', 'Yash Verma'
+      'Arjun Rao',
+      'Vikram Shah',
+      'Rohan Mehta',
+      'Karan Iyer',
+      'Sameer Khan',
+      'Dev Patel',
+      'Nikhil Joshi',
+      'Imran Ali',
+      'Pranav Nair',
+      'Tarun Das',
+      'Yash Verma',
     ],
     'Thunder Kings': [
-      'Aditya Menon', 'Rahul Sharma', 'Kabir Singh', 'Manav Gill', 'Zaid Ahmed',
-      'Harsh Vora', 'Ishaan Roy', 'Neel Desai', 'Omkar Pawar', 'Sujay Bose', 'Varun Kapoor'
+      'Aditya Menon',
+      'Rahul Sharma',
+      'Kabir Singh',
+      'Manav Gill',
+      'Zaid Ahmed',
+      'Harsh Vora',
+      'Ishaan Roy',
+      'Neel Desai',
+      'Omkar Pawar',
+      'Sujay Bose',
+      'Varun Kapoor',
     ],
     'City Warriors': [
-      'Ankit Yadav', 'Bhavesh Jain', 'Chirag Bhatt', 'Dhruv Saxena', 'Eshan Malik',
-      'Farhan Qureshi', 'Gaurav Tiwari', 'Hemant Rana', 'Irfan Sheikh', 'Jatin Arora', 'Kunal Sethi'
+      'Ankit Yadav',
+      'Bhavesh Jain',
+      'Chirag Bhatt',
+      'Dhruv Saxena',
+      'Eshan Malik',
+      'Farhan Qureshi',
+      'Gaurav Tiwari',
+      'Hemant Rana',
+      'Irfan Sheikh',
+      'Jatin Arora',
+      'Kunal Sethi',
     ],
   };
 
@@ -41,10 +68,10 @@ class SampleData {
             role: i == 5
                 ? PlayerRole.wicketKeeper
                 : i < 4
-                    ? PlayerRole.batter
-                    : i < 7
-                        ? PlayerRole.allRounder
-                        : PlayerRole.bowler,
+                ? PlayerRole.batter
+                : i < 7
+                ? PlayerRole.allRounder
+                : PlayerRole.bowler,
             battingStyle: i.isEven ? 'Right-hand bat' : 'Left-hand bat',
             bowlingStyle: i >= 4 ? 'Right-arm medium' : 'None',
           ),
@@ -53,13 +80,46 @@ class SampleData {
       }
       teams.add(t);
     }
-    await mc.add(_simulate(tc, teams[0], teams[1], rnd, 10, DateTime.now().subtract(const Duration(days: 6))));
-    await mc.add(_simulate(tc, teams[1], teams[2], rnd, 10, DateTime.now().subtract(const Duration(days: 3))));
-    await mc.add(_simulate(tc, teams[2], teams[0], rnd, 10, DateTime.now().subtract(const Duration(days: 1))));
+    await mc.add(
+      _simulate(
+        tc,
+        teams[0],
+        teams[1],
+        rnd,
+        10,
+        DateTime.now().subtract(const Duration(days: 6)),
+      ),
+    );
+    await mc.add(
+      _simulate(
+        tc,
+        teams[1],
+        teams[2],
+        rnd,
+        10,
+        DateTime.now().subtract(const Duration(days: 3)),
+      ),
+    );
+    await mc.add(
+      _simulate(
+        tc,
+        teams[2],
+        teams[0],
+        rnd,
+        10,
+        DateTime.now().subtract(const Duration(days: 1)),
+      ),
+    );
   }
 
-  static CricketMatch _simulate(TeamsController tc, Team a, Team b, Random rnd,
-      int overs, DateTime date) {
+  static CricketMatch _simulate(
+    TeamsController tc,
+    Team a,
+    Team b,
+    Random rnd,
+    int overs,
+    DateTime date,
+  ) {
     final names = <String, String>{};
     for (final t in [a, b]) {
       for (final p in tc.playersOf(t)) {
@@ -111,7 +171,13 @@ class SampleData {
         WicketType? wk;
         String? fielder;
         if (r < 0.05 + k * 0.01) {
-          wk = [WicketType.bowled, WicketType.caught, WicketType.lbw, WicketType.caught, WicketType.stumped][rnd.nextInt(5)];
+          wk = [
+            WicketType.bowled,
+            WicketType.caught,
+            WicketType.lbw,
+            WicketType.caught,
+            WicketType.stumped,
+          ][rnd.nextInt(5)];
           if (wk == WicketType.caught || wk == WicketType.stumped) {
             fielder = fielders[rnd.nextInt(fielders.length)];
           }

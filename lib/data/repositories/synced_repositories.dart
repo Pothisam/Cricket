@@ -104,7 +104,8 @@ class SyncedMatchRepository implements MatchRepository {
   Future<void> save(CricketMatch match) async {
     await _local.save(match);
     await _state.markDirty(SyncState.matches, match.id);
-    if (!match.isLive || !_state.serverHasMatch(match.id)) unawaited(putNow(match));
+    if (!match.isLive || !_state.serverHasMatch(match.id))
+      unawaited(putNow(match));
   }
 
   /// Full upsert of one match; returns whether it succeeded.

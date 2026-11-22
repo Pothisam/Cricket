@@ -87,7 +87,8 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _sync?.endSession(); // POST /auth/logout while the token is still valid
+    await _sync
+        ?.endSession(); // POST /auth/logout while the token is still valid
     await _service.signOut();
     changeNumber();
   }

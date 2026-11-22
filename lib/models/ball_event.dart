@@ -102,10 +102,10 @@ class BallEvent {
         return runs == 6
             ? BallOutcome.six
             : runs == 4
-                ? BallOutcome.four
-                : runs == 0
-                    ? BallOutcome.dot
-                    : BallOutcome.runs;
+            ? BallOutcome.four
+            : runs == 0
+            ? BallOutcome.dot
+            : BallOutcome.runs;
     }
   }
 
@@ -150,41 +150,50 @@ class BallEvent {
   }
 
   Map<String, dynamic> toJson() => {
-        'striker': strikerId,
-        'nonStriker': nonStrikerId,
-        'bowler': bowlerId,
-        'runs': runs,
-        'extra': extra.name,
-        'extraRuns': extraRuns,
-        'wicket': wicket?.name,
-        'out': outPlayerId,
-        'fielder': fielderId,
-        'shotDirection': shotDirection?.name,
-        'shotPath': shotPath == null ? null : [for (final p in shotPath!) [p.dx, p.dy]],
-        'loft': loft?.name,
-      };
+    'striker': strikerId,
+    'nonStriker': nonStrikerId,
+    'bowler': bowlerId,
+    'runs': runs,
+    'extra': extra.name,
+    'extraRuns': extraRuns,
+    'wicket': wicket?.name,
+    'out': outPlayerId,
+    'fielder': fielderId,
+    'shotDirection': shotDirection?.name,
+    'shotPath': shotPath == null
+        ? null
+        : [
+            for (final p in shotPath!) [p.dx, p.dy],
+          ],
+    'loft': loft?.name,
+  };
 
   factory BallEvent.fromJson(Map<String, dynamic> j) => BallEvent(
-        strikerId: j['striker'] as String,
-        nonStrikerId: j['nonStriker'] as String,
-        bowlerId: j['bowler'] as String,
-        runs: j['runs'] as int,
-        extra: ExtraType.values.byName(j['extra'] as String),
-        extraRuns: j['extraRuns'] as int,
-        wicket: j['wicket'] == null
-            ? null
-            : WicketType.values.byName(j['wicket'] as String),
-        outPlayerId: j['out'] as String?,
-        fielderId: j['fielder'] as String?,
-        shotDirection: j['shotDirection'] == null
-            ? null
-            : ShotDirection.values.byName(j['shotDirection'] as String),
-        shotPath: j['shotPath'] == null
-            ? null
-            : [
-                for (final p in j['shotPath'] as List)
-                  Offset(((p as List)[0] as num).toDouble(), (p[1] as num).toDouble()),
-              ],
-        loft: j['loft'] == null ? null : ShotLoft.values.byName(j['loft'] as String),
-      );
+    strikerId: j['striker'] as String,
+    nonStrikerId: j['nonStriker'] as String,
+    bowlerId: j['bowler'] as String,
+    runs: j['runs'] as int,
+    extra: ExtraType.values.byName(j['extra'] as String),
+    extraRuns: j['extraRuns'] as int,
+    wicket: j['wicket'] == null
+        ? null
+        : WicketType.values.byName(j['wicket'] as String),
+    outPlayerId: j['out'] as String?,
+    fielderId: j['fielder'] as String?,
+    shotDirection: j['shotDirection'] == null
+        ? null
+        : ShotDirection.values.byName(j['shotDirection'] as String),
+    shotPath: j['shotPath'] == null
+        ? null
+        : [
+            for (final p in j['shotPath'] as List)
+              Offset(
+                ((p as List)[0] as num).toDouble(),
+                (p[1] as num).toDouble(),
+              ),
+          ],
+    loft: j['loft'] == null
+        ? null
+        : ShotLoft.values.byName(j['loft'] as String),
+  );
 }

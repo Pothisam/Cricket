@@ -22,9 +22,9 @@ class SyncManager extends ChangeNotifier {
     required TeamRepository teams,
     required PlayerRepository players,
     required MatchRepository matches,
-  })  : _teams = teams,
-        _players = players,
-        _matches = matches;
+  }) : _teams = teams,
+       _players = players,
+       _matches = matches;
 
   final CricketApi api;
   final SyncState state;
@@ -66,17 +66,24 @@ class SyncManager extends ChangeNotifier {
       await state.setOwnerUid(uid);
 
       final n = NotificationService.instance;
-      await api.session(await devicePayload(
-        deviceId: deviceId,
-        fcmToken: n.token,
-        notificationsEnabled: n.enabled,
-      ));
+      await api.session(
+        await devicePayload(
+          deviceId: deviceId,
+          fcmToken: n.token,
+          notificationsEnabled: n.enabled,
+        ),
+      );
 
       await _tokenSub?.cancel();
       _tokenSub = n.onTokenRefresh.listen((t) async {
         try {
-          await api.registerToken(await devicePayload(
-              deviceId: deviceId, fcmToken: t, notificationsEnabled: n.enabled));
+          await api.registerToken(
+            await devicePayload(
+              deviceId: deviceId,
+              fcmToken: t,
+              notificationsEnabled: n.enabled,
+            ),
+          );
         } catch (_) {}
       });
 
@@ -85,7 +92,9 @@ class SyncManager extends ChangeNotifier {
       await syncAll();
       await _reload(); // also loads the teams / matches I belong to
     } catch (e) {
-      lastError = e is ApiException ? e.message : 'Could not start the session: $e';
+      lastError = e is ApiException
+          ? e.message
+          : 'Could not start the session: $e';
       debugPrint('startSession failed: $e');
       _uid = null; // allow a retry on the next sign-in event / app start
       notifyListeners();
@@ -95,8 +104,13 @@ class SyncManager extends ChangeNotifier {
   /// Call before signing out of Firebase (needs the still-valid token).
   Future<void> endSession() async {
     final n = NotificationService.instance;
-    final token = (await devicePayload(
-        deviceId: deviceId, fcmToken: n.token, notificationsEnabled: n.enabled))['fcmToken'] as String;
+    final token =
+        (await devicePayload(
+              deviceId: deviceId,
+              fcmToken: n.token,
+              notificationsEnabled: n.enabled,
+            ))['fcmToken']
+            as String;
     await _tokenSub?.cancel();
     _tokenSub = null;
     try {
@@ -135,14 +149,26 @@ class SyncManager extends ChangeNotifier {
     final delTeams = state.deleted(SyncState.teams);
     final delPlayers = state.deleted(SyncState.players);
     final delMatches = state.deleted(SyncState.matches);
-    if ([dirtyTeams, dirtyPlayers, dirtyMatches, delTeams, delPlayers, delMatches]
-        .every((s) => s.isEmpty)) {
+    if ([
+      dirtyTeams,
+      dirtyPlayers,
+      dirtyMatches,
+      delTeams,
+      delPlayers,
+      delMatches,
+    ].every((s) => s.isEmpty)) {
       return;
     }
 
-    final teams = (await _teams.getAll()).where((t) => dirtyTeams.contains(t.id)).toList();
-    final players = (await _players.getAll()).where((p) => dirtyPlayers.contains(p.id)).toList();
-    final matches = (await _matches.getAll()).where((m) => dirtyMatches.contains(m.id)).toList();
+    final teams = (await _teams.getAll())
+        .where((t) => dirtyTeams.contains(t.id))
+        .toList();
+    final players = (await _players.getAll())
+        .where((p) => dirtyPlayers.contains(p.id))
+        .toList();
+    final matches = (await _matches.getAll())
+        .where((m) => dirtyMatches.contains(m.id))
+        .toList();
 
     final res = await api.syncPush(
       teams: teams,
@@ -173,9 +199,18 @@ class SyncManager extends ChangeNotifier {
     Set<String> ok(String kind, Iterable<String> ids) =>
         ids.where((i) => !(rejected[kind]?.contains(i) ?? false)).toSet();
 
-    await state.clearDirty(SyncState.teams, ok(SyncState.teams, teams.map((t) => t.id)));
-    await state.clearDirty(SyncState.players, ok(SyncState.players, players.map((p) => p.id)));
-    await state.clearDirty(SyncState.matches, ok(SyncState.matches, matches.map((m) => m.id)));
+    await state.clearDirty(
+      SyncState.teams,
+      ok(SyncState.teams, teams.map((t) => t.id)),
+    );
+    await state.clearDirty(
+      SyncState.players,
+      ok(SyncState.players, players.map((p) => p.id)),
+    );
+    await state.clearDirty(
+      SyncState.matches,
+      ok(SyncState.matches, matches.map((m) => m.id)),
+    );
     await state.clearDeleted(SyncState.teams, delTeams);
     await state.clearDeleted(SyncState.players, delPlayers);
     await state.clearDeleted(SyncState.matches, delMatches);

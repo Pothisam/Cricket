@@ -35,11 +35,11 @@ class AppDependencies {
   final LiveScoringSync? live;
 
   factory AppDependencies.local(LocalStore store) => AppDependencies(
-        teams: LocalTeamRepository(store),
-        players: LocalPlayerRepository(store),
-        matches: LocalMatchRepository(store),
-        maintenance: LocalDataMaintenance(store),
-      );
+    teams: LocalTeamRepository(store),
+    players: LocalPlayerRepository(store),
+    matches: LocalMatchRepository(store),
+    maintenance: LocalDataMaintenance(store),
+  );
 
   /// Local-first with cloud sync against the Cricket API.
   factory AppDependencies.synced(SharedPreferences prefs) {

@@ -37,9 +37,9 @@ class TeamsController extends ChangeNotifier {
   }
 
   List<Player> playersOf(Team t) => [
-        for (final id in t.playerIds)
-          if (playerById(id) != null) playerById(id)!
-      ];
+    for (final id in t.playerIds)
+      if (playerById(id) != null) playerById(id)!,
+  ];
 
   List<Team> teamsOfPlayer(String playerId) =>
       teams.where((t) => t.playerIds.contains(playerId)).toList();

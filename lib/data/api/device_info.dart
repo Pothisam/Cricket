@@ -1,4 +1,3 @@
-
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -41,11 +40,14 @@ Future<Map<String, dynamic>> devicePayload({
     appVersion = '${p.version}+${p.buildNumber}';
   } catch (_) {}
 
-  String cut(String? v, int n) => v == null ? '' : (v.length > n ? v.substring(0, n) : v);
+  String cut(String? v, int n) =>
+      v == null ? '' : (v.length > n ? v.substring(0, n) : v);
 
   return {
     // The server requires a token. Web (no push yet) sends a placeholder.
-    'fcmToken': (fcmToken == null || fcmToken.isEmpty) ? '$platform-$deviceId' : fcmToken,
+    'fcmToken': (fcmToken == null || fcmToken.isEmpty)
+        ? '$platform-$deviceId'
+        : fcmToken,
     'deviceId': deviceId,
     'platform': platform,
     'deviceModel': cut(model, 120),

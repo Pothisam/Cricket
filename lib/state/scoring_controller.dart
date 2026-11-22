@@ -13,7 +13,8 @@ import 'matches_controller.dart';
 /// Drives scoring for one match. All rules live in [ScoringEngine];
 /// this class only sequences calls, persists and notifies.
 class ScoringController extends ChangeNotifier {
-  ScoringController(this.match, this._matches, {LiveScoringSync? live}) : _live = live {
+  ScoringController(this.match, this._matches, {LiveScoringSync? live})
+    : _live = live {
     if (match.innings.isEmpty) {
       ScoringEngine.startInnings(match, match.battingFirstId);
       _live?.startInnings(match, 1);
@@ -49,7 +50,8 @@ class ScoringController extends ChangeNotifier {
   List<String> get availableBowlers {
     final all = match.squad(innings.bowlingTeamId);
     final last = innings.balls.isEmpty ? null : innings.balls.last.bowlerId;
-    final justFinishedOver = innings.bowlerId == null && innings.balls.isNotEmpty;
+    final justFinishedOver =
+        innings.bowlerId == null && innings.balls.isNotEmpty;
     return all.where((id) => !(justFinishedOver && id == last)).toList();
   }
 
@@ -130,7 +132,8 @@ class ScoringController extends ChangeNotifier {
 
   Future<void> undo() {
     var inn = innings;
-    var structural = false; // an innings was removed: no granular endpoint for that
+    var structural =
+        false; // an innings was removed: no granular endpoint for that
     if (inn.balls.isEmpty && match.innings.length > 1) {
       match.innings.removeLast();
       inn = innings;

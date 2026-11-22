@@ -169,8 +169,8 @@ class InningsSummary {
     if (innings.strikerId != null) _bat(innings.strikerId!);
     if (innings.nonStrikerId != null) _bat(innings.nonStrikerId!);
     for (final l in _batters.values) {
-      l.atCrease = !l.out &&
-          (l.id == innings.strikerId || l.id == innings.nonStrikerId);
+      l.atCrease =
+          !l.out && (l.id == innings.strikerId || l.id == innings.nonStrikerId);
     }
   }
 }

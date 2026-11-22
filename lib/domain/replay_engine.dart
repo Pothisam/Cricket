@@ -51,17 +51,19 @@ class ReplayEngine {
         inOver++;
         final over = legal ~/ 6 + 1;
         final after = _summaryOf(inn, k + 1);
-        steps.add(ReplayStep(
-          inningsIndex: i,
-          innings: inn,
-          ball: b,
-          over: over,
-          ballInOver: inOver,
-          before: prev,
-          after: after,
-          isFirstOfInnings: k == 0,
-          isLastOfInnings: k == inn.balls.length - 1,
-        ));
+        steps.add(
+          ReplayStep(
+            inningsIndex: i,
+            innings: inn,
+            ball: b,
+            over: over,
+            ballInOver: inOver,
+            before: prev,
+            after: after,
+            isFirstOfInnings: k == 0,
+            isLastOfInnings: k == inn.balls.length - 1,
+          ),
+        );
         prev = after;
         if (b.isLegal) {
           legal++;
@@ -72,13 +74,13 @@ class ReplayEngine {
   }
 
   InningsSummary _summaryOf(Innings inn, int count) => InningsSummary(
-        match,
-        Innings(
-          battingTeamId: inn.battingTeamId,
-          bowlingTeamId: inn.bowlingTeamId,
-          balls: inn.balls.sublist(0, count),
-        ),
-      );
+    match,
+    Innings(
+      battingTeamId: inn.battingTeamId,
+      bowlingTeamId: inn.bowlingTeamId,
+      balls: inn.balls.sublist(0, count),
+    ),
+  );
 
   bool get isEmpty => steps.isEmpty;
 

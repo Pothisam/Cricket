@@ -15,7 +15,8 @@ class SyncState {
   static const matches = 'matches';
 
   Set<String> _set(String key) => (_p.getStringList(key) ?? const []).toSet();
-  Future<void> _save(String key, Set<String> v) => _p.setStringList(key, v.toList());
+  Future<void> _save(String key, Set<String> v) =>
+      _p.setStringList(key, v.toList());
 
   Set<String> dirty(String kind) => _set('sync_dirty_$kind');
   Set<String> deleted(String kind) => _set('sync_deleted_$kind');
@@ -52,15 +53,21 @@ class SyncState {
   Future<void> setOwnerUid(String? v) =>
       v == null ? _p.remove('sync_owner') : _p.setString('sync_owner', v);
 
-  bool get hasPending =>
-      [teams, players, matches].any((k) => dirty(k).isNotEmpty || deleted(k).isNotEmpty);
+  bool get hasPending => [
+    teams,
+    players,
+    matches,
+  ].any((k) => dirty(k).isNotEmpty || deleted(k).isNotEmpty);
 
   /// Stable random id for this install (sent as `X-Device-Id` / `deviceId`).
   static String deviceIdOf(SharedPreferences p) {
     var id = p.getString('device_id');
     if (id == null) {
       final r = Random.secure();
-      id = List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+      id = List.generate(
+        16,
+        (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0'),
+      ).join();
       p.setString('device_id', id);
     }
     return id;

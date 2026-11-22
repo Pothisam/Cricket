@@ -38,7 +38,8 @@ class NotificationService {
     try {
       final fcm = FirebaseMessaging.instance;
       final settings = await fcm.requestPermission();
-      enabled = settings.authorizationStatus == AuthorizationStatus.authorized ||
+      enabled =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
 
       await _local.initialize(
@@ -48,7 +49,8 @@ class NotificationService {
       );
       await _local
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
+            AndroidFlutterLocalNotificationsPlugin
+          >()
           ?.createNotificationChannel(_channel);
 
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);

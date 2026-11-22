@@ -17,6 +17,8 @@ IconData _iconFor(String type) => switch (type) {
   'match_result' => Icons.emoji_events,
   'login' => Icons.login,
   'team_added' => Icons.group_add_outlined,
+  'match_invite' => Icons.sports_kabaddi,
+  'match_invite_response' => Icons.event_available_outlined,
   _ => Icons.notifications_none,
 };
 

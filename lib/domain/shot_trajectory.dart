@@ -14,7 +14,10 @@ class ShotTrajectory {
   ShotTrajectory(List<Offset> raw, this.loft) : points = _prepare(raw);
 
   /// Where the ball meets the bat.
-  static const origin = Offset(0, -0.1385); // bat contact, just in front of the popping crease
+  static const origin = Offset(
+    0,
+    -0.1385,
+  ); // bat contact, just in front of the popping crease
   static const _samples = 48;
 
   /// Dense, evenly spaced (by arc length) ground points, starting at [origin].
@@ -22,9 +25,16 @@ class ShotTrajectory {
   final ShotLoft loft;
 
   /// A straight shot of length [frac] (ground radius = 1) towards [dir].
-  factory ShotTrajectory.fromDirection(ShotDirection dir, double frac, ShotLoft loft) {
+  factory ShotTrajectory.fromDirection(
+    ShotDirection dir,
+    double frac,
+    ShotLoft loft,
+  ) {
     final a = dir.angle * math.pi / 180;
-    return ShotTrajectory([origin, Offset(math.sin(a), math.cos(a)) * frac], loft);
+    return ShotTrajectory([
+      origin,
+      Offset(math.sin(a), math.cos(a)) * frac,
+    ], loft);
   }
 
   static List<Offset> _prepare(List<Offset> raw) {
@@ -60,7 +70,11 @@ class ShotTrajectory {
         j++;
       }
       final seg = cum[j + 1] - cum[j];
-      out.add(seg == 0 ? cur[j] : Offset.lerp(cur[j], cur[j + 1], (d - cum[j]) / seg)!);
+      out.add(
+        seg == 0
+            ? cur[j]
+            : Offset.lerp(cur[j], cur[j + 1], (d - cum[j]) / seg)!,
+      );
     }
     return out;
   }
@@ -152,7 +166,9 @@ class ShotTrajectory {
     final heading = points.length > 3
         ? (end - points[points.length - 4])
         : (end - points.first);
-    final dir = heading.distance == 0 ? const Offset(0, 1) : heading / heading.distance;
+    final dir = heading.distance == 0
+        ? const Offset(0, 1)
+        : heading / heading.distance;
     // Walk forward until the rope is crossed.
     var tip = end;
     var steps = 0;
