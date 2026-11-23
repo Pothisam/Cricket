@@ -8,6 +8,7 @@ import '../../data/app_dependencies.dart';
 import '../../state/auth_controller.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
+import '../widgets/avatars.dart';
 
 /// `GET/PATCH/DELETE /me`, `POST /feedback`, `GET /health`, `GET /config`.
 class AccountScreen extends StatefulWidget {
@@ -91,13 +92,9 @@ class _AccountScreenState extends State<AccountScreen> {
               child: ListView(
                 children: [
                   ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: me.photoUrl == null
-                          ? null
-                          : NetworkImage(me.photoUrl!),
-                      child: me.photoUrl == null
-                          ? const Icon(Icons.person)
-                          : null,
+                    leading: CurrentUserAvatar(
+                      photoUrl: me.photoUrl,
+                      name: me.displayName ?? me.email,
                     ),
                     title: Text(
                       me.displayName?.isNotEmpty == true

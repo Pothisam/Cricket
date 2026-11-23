@@ -18,6 +18,13 @@ class CricketApi {
   /// Data endpoints answer 401 before that.
   bool sessionReady = false;
 
+  /// False while the device has no network (set by SyncManager). Local changes are then
+  /// only stored on the device and sent later.
+  bool online = true;
+
+  /// A signed-in session and a network: worth trying a request.
+  bool get canSend => sessionReady && online;
+
   static Json matchJson(CricketMatch m) =>
       m.toJson()..['date'] = m.date.toUtc().toIso8601String();
 
@@ -102,6 +109,12 @@ class CricketApi {
   Future<Player> addPlayerFromUser(String userId) async => Player.fromJson(
     _map(await client.post('/players/from-user', body: {'userId': userId})),
   );
+
+  /// Other scorers' PUBLIC teams in which this player (a registered user in my list) also plays.
+  Future<List<JoinedTeam>> playerPublicTeams(String playerId) async => [
+    for (final j in _items(await client.get('/players/$playerId/teams')))
+      JoinedTeam.fromJson(j),
+  ];
 
   // ------------------------------------------------------ teams / matches I belong to
   /// Teams created by others in which I was added as a player.
@@ -491,7 +504,7 @@ class CricketApi {
       );
 
   /// Returns (sent, failed).
-  Future<(int, int)> sendTest({
+  Future<TestPushResult> sendTest({
     String title = 'Test',
     String body = 'Hello from Cricket Scorer',
   }) async {
@@ -501,7 +514,11 @@ class CricketApi {
         body: {'title': title, 'body': body},
       ),
     );
-    return (r['sent'] as int? ?? 0, r['failed'] as int? ?? 0);
+    return TestPushResult(
+      r['sent'] as int? ?? 0,
+      r['failed'] as int? ?? 0,
+      r['reason'] as String?,
+    );
   }
 
   /// Admin only (Firebase custom claim `admin: true`).

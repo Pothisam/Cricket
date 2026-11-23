@@ -6,6 +6,7 @@ import '../../state/matches_controller.dart';
 import '../../state/teams_controller.dart';
 import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
+import '../widgets/avatars.dart';
 import 'player_detail_screen.dart';
 import 'player_form.dart';
 import 'player_search_screen.dart';
@@ -87,9 +88,7 @@ class _PlayersTabState extends State<PlayersTab> {
                             .map((t) => t.shortName)
                             .join(', ');
                         return ListTile(
-                          leading: CircleAvatar(
-                            child: Text(p.name[0].toUpperCase()),
-                          ),
+                          leading: PlayerAvatar(p),
                           title: Row(
                             children: [
                               Flexible(

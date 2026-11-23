@@ -11,6 +11,7 @@ import '../../models/player.dart';
 import '../../state/teams_controller.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
+import '../widgets/avatars.dart';
 import 'player_detail_screen.dart';
 
 String _roleLabel(String name) => PlayerRole.values
@@ -207,10 +208,6 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
     );
   }
 
-  Widget _avatar(PlayerSearchItem r) => CircleAvatar(
-    backgroundImage: r.photoUrl == null ? null : NetworkImage(r.photoUrl!),
-    child: r.photoUrl == null
-        ? Text(r.name.isEmpty ? '?' : r.name[0].toUpperCase())
-        : null,
-  );
+  Widget _avatar(PlayerSearchItem r) =>
+      UserAvatar(name: r.name, photoUrl: r.photoUrl);
 }

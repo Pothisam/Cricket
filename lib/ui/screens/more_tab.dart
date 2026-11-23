@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/app_dependencies.dart';
-import '../../data/sample_data.dart';
 import '../../state/auth_controller.dart';
-import '../../state/matches_controller.dart';
-import '../../state/teams_controller.dart';
-import '../../data/api/api_client.dart';
 import '../../data/api/sync_manager.dart';
 import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
+import '../widgets/avatars.dart';
 import 'account_screen.dart';
 import 'devices_screen.dart';
 import 'following_screen.dart';
@@ -35,7 +32,7 @@ class MoreTab extends StatelessWidget {
                 onTap: () => _open(context, const ProfileScreen()),
               ),
               ListTile(
-                leading: const Icon(Icons.account_circle_outlined),
+                leading: const CurrentUserAvatar(),
                 title: const Text('My account'),
                 subtitle: const Text('Profile, feedback, delete account'),
                 onTap: () => _open(context, const AccountScreen()),
@@ -60,7 +57,7 @@ class MoreTab extends StatelessWidget {
               const _SyncTile(),
             ],
             ListTile(
-              leading: const Icon(Icons.logout),
+              leading: const CurrentUserAvatar(),
               title: const Text('Sign out'),
               subtitle: Text(
                 context.watch<AuthController>().user?.email ??
@@ -69,86 +66,31 @@ class MoreTab extends StatelessWidget {
               ),
               onTap: () => context.read<AuthController>().signOut(),
             ),
-            const SectionHeader('DATA'),
             ListTile(
-              leading: const Icon(Icons.auto_awesome),
-              title: const Text('Load sample data'),
-              subtitle: const Text(
-                '3 teams, 33 players and 3 simulated matches',
+              leading: const Icon(Icons.info_outline),
+              title: const Text('Credits'),
+              onTap: () => showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Credits'),
+                  content: const SingleChildScrollView(
+                    child: Text(
+                      '3D models, all licensed CC-BY 4.0 (creativecommons.org/licenses/by/4.0), from Sketchfab:\n'
+                      '• Indian Cricket Player Rigged / - Rigged: numaan.k99\n'
+                      '• Virat Kohli Cricket Batting Animation (motion data only): bhagathartworks\n'
+                      '• Cricket Bat: omkar.jawake\n'
+                      '• Narendra Modi Stadium | Low Poly | Game Ready: kevin_k_5124\n\n'
+                      'Kits re-coloured, branding removed, animated and adapted for this app.',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
               ),
-              onTap: () async {
-                final tc = context.read<TeamsController>();
-                final mc = context.read<MatchesController>();
-                if (tc.teams.isNotEmpty &&
-                    !await confirm(
-                      context,
-                      'Add sample data?',
-                      'Sample teams and matches will be added next to your existing data.',
-                      action: 'Add',
-                    )) {
-                  return;
-                }
-                await SampleData.load(tc, mc);
-                if (context.mounted) toast(context, 'Sample data loaded');
-              },
-            ),
-            ListTile(
-              leading: Icon(
-                Icons.delete_forever,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              title: const Text('Erase all data'),
-              subtitle: const Text(
-                'Removes every team, player and match from this device and the cloud',
-              ),
-              onTap: () async {
-                final deps = context.read<AppDependencies>();
-                final tc = context.read<TeamsController>();
-                final mc = context.read<MatchesController>();
-                if (!await confirm(
-                  context,
-                  'Erase everything?',
-                  'This cannot be undone.',
-                  action: 'Erase',
-                )) {
-                  return;
-                }
-                try {
-                  if (deps.sync != null) {
-                    await deps.sync!.eraseEverything();
-                  } else {
-                    await deps.maintenance.clearAll();
-                  }
-                } on ApiException catch (e) {
-                  if (context.mounted)
-                    toast(context, 'Could not erase cloud data: ${e.message}');
-                  return;
-                }
-                await tc.load();
-                await mc.load();
-                if (context.mounted) toast(context, 'All data erased');
-              },
-            ),
-            const SectionHeader('ABOUT'),
-            const ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text('Cricket Scorer'),
-              subtitle: Text(
-                'Version 1.0 · Data is saved on this device and synced to your account',
-              ),
-            ),
-            const ListTile(
-              leading: Icon(Icons.sports_cricket),
-              title: Text('3D models & credits'),
-              subtitle: Text(
-                'All licensed CC-BY 4.0 (creativecommons.org/licenses/by/4.0), from Sketchfab:\n'
-                '• Indian Cricket Player Rigged / - Rigged — numaan.k99\n'
-                '• Virat Kohli Cricket Batting Animation (motion data only) — bhagathartworks\n'
-                '• Cricket Bat — omkar.jawake\n'
-                '• Narendra Modi Stadium | Low Poly | Game Ready — kevin_k_5124\n'
-                'Kits re-coloured, branding removed, animated and adapted for this app.',
-              ),
-              isThreeLine: true,
             ),
           ],
         ),
@@ -178,7 +120,11 @@ class _SyncTile extends StatelessWidget {
           : const Icon(Icons.sync),
       title: const Text('Sync now'),
       subtitle: Text(
-        sync.lastError != null
+        !sync.online
+            ? 'Offline. ${sync.pendingCount} change(s) saved on this device, sent when you are back online'
+            : sync.pendingCount > 0
+            ? '${sync.pendingCount} change(s) waiting to sync'
+            : sync.lastError != null
             ? 'Last error: ${sync.lastError}'
             : t == null
             ? (sync.signedIn ? 'Not synced yet' : 'Connecting to server...')

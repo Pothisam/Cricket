@@ -10,6 +10,7 @@ import '../../state/membership_controller.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/scorecard_view.dart';
+import '../widgets/avatars.dart';
 
 String _roleLabel(String name) => PlayerRole.values
     .firstWhere((r) => r.name == name, orElse: () => PlayerRole.batter)
@@ -89,16 +90,12 @@ class _JoinedTeamScreenState extends State<JoinedTeamScreen> {
                     ),
                   for (final m in d?.squad ?? const <SquadMember>[])
                     ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: m.photoUrl == null
-                            ? null
-                            : NetworkImage(m.photoUrl!),
-                        child: m.photoUrl == null
-                            ? Text(
-                                m.name.isEmpty ? '?' : m.name[0].toUpperCase(),
-                              )
-                            : null,
-                      ),
+                      leading: m.isMe
+                          ? CurrentUserAvatar(
+                              photoUrl: m.photoUrl,
+                              name: m.name,
+                            )
+                          : UserAvatar(name: m.name, photoUrl: m.photoUrl),
                       title: Text(m.isMe ? '${m.name} (you)' : m.name),
                       subtitle: Text(
                         [

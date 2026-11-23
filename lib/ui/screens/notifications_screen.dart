@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/api/api_client.dart';
 import '../../data/api/api_models.dart';
 import '../../data/api/cricket_api.dart';
+import '../../data/api/sync_manager.dart';
+import '../../services/notification_service.dart';
 import '../../data/app_dependencies.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
@@ -322,9 +325,24 @@ class _NotificationSettingsScreenState
                   subtitle: const Text('Sent to your signed-in devices'),
                   onTap: () async {
                     try {
-                      final (sent, failed) = await _api.sendTest();
-                      if (context.mounted)
-                        toast(context, 'Sent: $sent, failed: $failed');
+                      final r = await _api.sendTest();
+                      if (context.mounted) {
+                        await showDialog<void>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: Text(
+                              r.sent > 0 ? 'Test sent' : 'Not delivered',
+                            ),
+                            content: Text(r.message),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                     } on ApiException catch (e) {
                       if (context.mounted) toast(context, e.message);
                     }
@@ -344,4 +362,57 @@ class _NotificationSettingsScreenState
           _save();
         },
       );
+}
+
+/// Shows when the phone blocks notifications for this app, and lets the user turn them on.
+class _PermissionTile extends StatefulWidget {
+  const _PermissionTile();
+
+  @override
+  State<_PermissionTile> createState() => _PermissionTileState();
+}
+
+class _PermissionTileState extends State<_PermissionTile> {
+  @override
+  Widget build(BuildContext context) {
+    final n = NotificationService.instance;
+    if (kIsWeb) {
+      return const ListTile(
+        leading: Icon(Icons.info_outline),
+        title: Text('Push notifications are for the phone app'),
+        subtitle: Text(
+          'In the browser you only see notifications in this inbox.',
+        ),
+      );
+    }
+    if (n.enabled) return const SizedBox.shrink();
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      color: cs.errorContainer,
+      margin: const EdgeInsets.all(16),
+      child: ListTile(
+        leading: Icon(
+          Icons.notifications_off_outlined,
+          color: cs.onErrorContainer,
+        ),
+        title: Text(
+          'Notifications are blocked on this phone',
+          style: TextStyle(color: cs.onErrorContainer),
+        ),
+        subtitle: Text(
+          'You will not get pop-ups when the app is closed. Tap Turn on, or allow notifications for Cricket in the phone settings.',
+          style: TextStyle(color: cs.onErrorContainer),
+        ),
+        trailing: FilledButton(
+          onPressed: () async {
+            final sync = context.read<SyncManager>();
+            await n.requestPermission();
+            await sync.refreshDevice(force: true);
+            if (mounted) setState(() {});
+          },
+          child: const Text('Turn on'),
+        ),
+      ),
+    );
+  }
 }

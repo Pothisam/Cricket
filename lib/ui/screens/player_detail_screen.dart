@@ -8,8 +8,10 @@ import '../../data/app_dependencies.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
+import '../widgets/avatars.dart';
 import 'match_detail_screen.dart';
 import 'player_form.dart';
+import 'player_teams_tab.dart';
 
 class PlayerDetailScreen extends StatelessWidget {
   const PlayerDetailScreen({super.key, required this.playerId});
@@ -25,7 +27,7 @@ class PlayerDetailScreen extends StatelessWidget {
     final teams = tc.teamsOfPlayer(playerId);
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(player.name),
@@ -64,6 +66,7 @@ class PlayerDetailScreen extends StatelessWidget {
               Tab(text: 'Batting'),
               Tab(text: 'Bowling'),
               Tab(text: 'Matches'),
+              Tab(text: 'Teams'),
             ],
           ),
         ),
@@ -74,13 +77,7 @@ class PlayerDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 28,
-                      child: Text(
-                        player.name[0].toUpperCase(),
-                        style: const TextStyle(fontSize: 24),
-                      ),
-                    ),
+                    PlayerAvatar(player, radius: 28),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -138,6 +135,7 @@ class PlayerDetailScreen extends StatelessWidget {
                       ('Maidens', '${c.maidens}'),
                     ]),
                     _records(context, c),
+                    PlayerTeamsTab(player: player),
                   ],
                 ),
               ),

@@ -431,3 +431,32 @@ class MatchInvitation {
   String? get otherOwnerName => outgoing ? toUserName : fromUserName;
   String get title => '$fromTeamShort vs $toTeamShort';
 }
+
+/// Result of `POST /notifications/test`: how many devices got the push, and why not when none did.
+class TestPushResult {
+  TestPushResult(this.sent, this.failed, this.reason);
+  final int sent, failed;
+
+  /// push_disabled | no_target_devices | quiet_hours | an FCM error code.
+  final String? reason;
+
+  /// Plain-language explanation for the user.
+  String get message {
+    if (sent > 0)
+      return 'Sent to $sent device${sent == 1 ? '' : 's'}. It should appear in the notification bar.';
+    return switch (reason) {
+      'push_disabled' =>
+        'The server cannot send push messages: it has no Firebase service-account key. '
+            'The backend developer must set FirebaseConfig:CredentialsPath on the server '
+            '(Firebase Console > Project settings > Service accounts > Generate new private key).',
+      'no_target_devices' =>
+        'The server has no device of yours that accepts notifications. '
+            'Allow notifications for this app in the phone settings, then reopen the app.',
+      'quiet_hours' => 'Quiet hours are on, so nothing was sent.',
+      'Unregistered' || 'InvalidArgument' => 'This phone\'s notification token is no longer valid. Close and reopen the app to register it again.',
+      'SenderIdMismatch' || 'ThirdPartyAuthError' => 'The server\'s Firebase key belongs to a different Firebase project than the app (cricket-run-notification).',
+      final r? => 'The push could not be delivered ($r).',
+      null => 'The push could not be delivered.',
+    };
+  }
+}

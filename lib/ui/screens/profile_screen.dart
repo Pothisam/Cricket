@@ -8,6 +8,7 @@ import '../../data/app_dependencies.dart';
 import '../../models/player.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
+import '../widgets/avatars.dart';
 
 String _roleLabel(String name) => PlayerRole.values
     .firstWhere((r) => r.name == name, orElse: () => PlayerRole.batter)
@@ -129,19 +130,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   Row(
                     children: [
-                      CircleAvatar(
+                      CurrentUserAvatar(
                         radius: 32,
-                        backgroundImage: p.photoUrl == null
-                            ? null
-                            : NetworkImage(p.photoUrl!),
-                        child: p.photoUrl == null
-                            ? Text(
-                                p.displayName.isEmpty
-                                    ? '?'
-                                    : p.displayName[0].toUpperCase(),
-                                style: const TextStyle(fontSize: 24),
-                              )
-                            : null,
+                        photoUrl: p.photoUrl,
+                        name: p.displayName,
                       ),
                       const SizedBox(width: 16),
                       Expanded(

@@ -47,8 +47,35 @@ class TeamsTab extends StatelessWidget {
                           t.name,
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
-                        subtitle: Text('${t.playerIds.length} players'),
-                        trailing: const Icon(Icons.chevron_right),
+                        subtitle: Text(
+                          '${t.playerIds.length} players · ${t.isPublic ? 'Public' : 'Private'}',
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              tooltip: 'Duplicate team',
+                              icon: const Icon(Icons.copy_all_outlined),
+                              onPressed: () async {
+                                final copy = await tc.duplicateTeam(t);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context)
+                                  ..hideCurrentSnackBar()
+                                  ..showSnackBar(
+                                    SnackBar(
+                                      content: Text('Created "${copy.name}"'),
+                                      action: SnackBarAction(
+                                        label: 'Rename',
+                                        onPressed: () =>
+                                            showTeamForm(context, team: copy),
+                                      ),
+                                    ),
+                                  );
+                              },
+                            ),
+                            const Icon(Icons.chevron_right),
+                          ],
+                        ),
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -71,6 +98,7 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
   final name = TextEditingController(text: team?.name ?? '');
   final short = TextEditingController(text: team?.shortName ?? '');
   var color = team?.colorIndex ?? tc.teams.length % teamColors.length;
+  var isPublic = team?.isPublic ?? false;
   final formKey = GlobalKey<FormState>();
   var shortEdited = team != null;
 
@@ -137,19 +165,38 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
                     ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: Icon(isPublic ? Icons.public : Icons.lock_outline),
+                title: Text(isPublic ? 'Public team' : 'Private team'),
+                subtitle: Text(
+                  isPublic
+                      ? 'Other scorers can search this team by name and challenge it to a match.'
+                      : 'Only you can see this team.',
+                ),
+                value: isPublic,
+                onChanged: (v) => setState(() => isPublic = v),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
                     if (team == null) {
-                      await tc.addTeam(name.text, short.text, color);
+                      await tc.addTeam(
+                        name.text,
+                        short.text,
+                        color,
+                        isPublic: isPublic,
+                      );
                     } else {
                       team
                         ..name = name.text.trim()
                         ..shortName = short.text.trim().toUpperCase()
-                        ..colorIndex = color;
+                        ..colorIndex = color
+                        ..isPublic = isPublic;
                       await tc.updateTeam(team);
                     }
                     if (ctx.mounted) Navigator.pop(ctx);

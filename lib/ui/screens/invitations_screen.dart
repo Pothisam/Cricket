@@ -4,10 +4,13 @@ import 'package:provider/provider.dart';
 
 import '../../data/api/api_models.dart';
 import '../../data/app_dependencies.dart';
+import '../../state/matches_controller.dart';
 import '../../state/membership_controller.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
+import 'joined_screens.dart';
+import 'match_detail_screen.dart';
 import 'new_match_screen.dart';
 
 /// Match challenges: the ones I received (accept / reject) and the ones I sent.
@@ -121,6 +124,14 @@ class _InvitationCardState extends State<InvitationCard> {
   @override
   Widget build(BuildContext context) {
     final i = widget.inv;
+    final ms = context.watch<MembershipController>();
+    final localMatch = context
+        .watch<MatchesController>()
+        .matches
+        .where((m) => m.invitationId == i.id)
+        .firstOrNull;
+    // Started on the server, or started on this device and not synced yet: nobody can start or cancel it.
+    final started = i.isStarted || localMatch != null;
     final api = context.read<AppDependencies>().api!;
     final theme = Theme.of(context);
     final when = i.scheduledAt == null
@@ -161,7 +172,7 @@ class _InvitationCardState extends State<InvitationCard> {
           child: const Text('Cancel'),
         ),
       );
-    } else if (i.isAccepted) {
+    } else if (i.isAccepted && !started) {
       actions.add(
         TextButton(
           onPressed: _busy
@@ -200,6 +211,37 @@ class _InvitationCardState extends State<InvitationCard> {
       }
     }
 
+    if (started) {
+      final summary = ms.matches.where((m) => m.id == i.matchId).firstOrNull;
+      if (localMatch != null) {
+        actions.add(
+          FilledButton.tonalIcon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MatchDetailScreen(matchId: localMatch.id),
+              ),
+            ),
+            icon: const Icon(Icons.sports_cricket),
+            label: const Text('Open match'),
+          ),
+        );
+      } else if (summary != null) {
+        actions.add(
+          FilledButton.tonalIcon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => JoinedMatchScreen(summary: summary),
+              ),
+            ),
+            icon: const Icon(Icons.sports_cricket),
+            label: const Text('View match'),
+          ),
+        );
+      }
+    }
+
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -219,11 +261,19 @@ class _InvitationCardState extends State<InvitationCard> {
                 ),
                 const SizedBox(width: 8),
                 Chip(
-                  label: Text(_statusLabel(i)),
+                  label: Text(started ? 'Started' : _statusLabel(i)),
                   visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: _statusColor(context, i.status)),
+                  side: BorderSide(
+                    color: _statusColor(
+                      context,
+                      started ? 'started' : i.status,
+                    ),
+                  ),
                   labelStyle: TextStyle(
-                    color: _statusColor(context, i.status),
+                    color: _statusColor(
+                      context,
+                      started ? 'started' : i.status,
+                    ),
                     fontSize: 12,
                   ),
                 ),
@@ -256,7 +306,7 @@ class _InvitationCardState extends State<InvitationCard> {
                 ),
               ),
             ],
-            if (i.isAccepted && !i.outgoing) ...[
+            if (i.isAccepted && !started && !i.outgoing) ...[
               const SizedBox(height: 6),
               Text(
                 '${i.fromUserName ?? 'The other scorer'} will start and score the match.',
@@ -295,7 +345,17 @@ class ScheduledSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fixtures = context.watch<MembershipController>().fixtures;
+    final startedHere = context
+        .watch<MatchesController>()
+        .matches
+        .map((m) => m.invitationId)
+        .whereType<String>()
+        .toSet();
+    final fixtures = context
+        .watch<MembershipController>()
+        .fixtures
+        .where((i) => !startedHere.contains(i.id))
+        .toList();
     if (fixtures.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -23,7 +23,7 @@ class LiveScoringSync {
 
   void _enqueue(CricketMatch m, Future<void> Function() op) {
     _tail = _tail.then((_) async {
-      if (!_api.sessionReady) return;
+      if (!_api.canSend) return;
       try {
         if (!_state.serverHasMatch(m.id) && !await _matches.putNow(m)) return;
         await op();

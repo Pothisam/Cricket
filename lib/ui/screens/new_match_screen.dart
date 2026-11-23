@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/ids.dart';
+import '../../data/api/api_client.dart';
 import '../../data/api/api_models.dart';
 import '../../data/api/sync_manager.dart';
 import '../../data/app_dependencies.dart';
@@ -469,9 +470,43 @@ class _StartFixtureScreenState extends State<StartFixtureScreen> {
       invitationId: _inv.id,
       opponentUserId: _inv.toUserId,
     );
+
+    // The server has to accept the match first: that links it to the invitation, turns the
+    // scheduled match into "started" (nobody can cancel it any more) and shows it to the other team.
+    try {
+      final res = await context.read<AppDependencies>().api!.syncPush(
+        teams: const [],
+        players: const [],
+        matches: [match],
+      );
+      final rejected = (res['rejected'] as List?) ?? const [];
+      if (rejected.isNotEmpty) {
+        final r = Map<String, dynamic>.from(rejected.first as Map);
+        throw ApiException(
+          409,
+          '${r['reason'] ?? 'REJECTED'}',
+          '${r['message'] ?? 'The server did not accept the match'}',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _starting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not start the match: ${apiMessage(e)}'),
+          ),
+        );
+      }
+      unawaited(ms.load()); // the invitation may have been cancelled meanwhile
+      return;
+    }
+
+    await sync.state.setServerHasMatch(
+      match.id,
+      true,
+    ); // live scoring can use the live endpoints
     await mc.add(match);
-    // Sends the match to the server now, which links it to the invitation and shows it to the other team.
-    unawaited(sync.syncAll().then((_) => ms.load()));
+    unawaited(ms.load());
     navigator.pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => ScoringScreen(matchId: match.id)),
       (r) => r.isFirst,

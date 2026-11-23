@@ -217,7 +217,7 @@ class _ChallengeScreenState extends State<ChallengeScreen> {
               controller: _search,
               onChanged: _onChanged,
               decoration: const InputDecoration(
-                labelText: 'Search a team by name',
+                labelText: 'Search a public team by name',
                 prefixIcon: Icon(Icons.search),
               ),
             ),

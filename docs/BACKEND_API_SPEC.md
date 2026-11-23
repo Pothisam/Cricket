@@ -813,3 +813,11 @@ Implemented by `Database/CricketDB_Upgrade_003_MatchInvitations.sql`.
 **Flow**: search a team of another user (`GET /teams/search?q=`) -> `POST /match-invitations` (pending, the other owner gets a `match_invite` notification) -> the other owner accepts or rejects (`POST .../accept|reject`, the scorer gets `match_invite_response`) -> the accepted invitation is the scheduled match, visible to both owners (`GET /match-invitations`) -> the scorer starts it (`GET .../opponent-squad` to pick the XIs, then the usual `PUT /matches/{id}` with `invitationId`) -> status `started`; the opponent sees the live match and scorecard in `GET /me/matches`, `GET /me/matches/{ownerId}/{matchId}`.
 
 **Rules**: own teams cannot be challenged; one `pending` invitation per pair of teams; only the scorer (owner of the match) scores; `cancel` by the sender while pending, by either side once accepted.
+
+---
+
+## 17. Public / private teams
+
+Implemented by `Database/CricketDB_Upgrade_004_TeamVisibility.sql`: `teams.is_public BIT NOT NULL DEFAULT 0`. `TeamDto.isPublic` is read and written by `PUT /teams/{id}` and returned by team lists and sync. `GET /teams/search` only returns public teams of other users; `POST /match-invitations` only accepts a public opponent team. Private (default): only the owner sees the team; added players still see it in `GET /me/joined-teams`.
+
+`GET /players/{id}/teams`: other scorers' public teams in which one of my players (a registered user, discoverable) also plays. Used by the player screen's Teams tab.

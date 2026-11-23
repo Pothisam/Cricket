@@ -29,7 +29,7 @@ class SyncedTeamRepository implements TeamRepository {
   }
 
   Future<void> _push(Team t) async {
-    if (!_api.sessionReady) return;
+    if (!_api.canSend) return;
     try {
       await _api.putTeam(t);
       await _state.clearDirty(SyncState.teams, [t.id]);
@@ -40,7 +40,7 @@ class SyncedTeamRepository implements TeamRepository {
   Future<void> delete(String id) async {
     await _local.delete(id);
     await _state.markDeleted(SyncState.teams, id);
-    if (!_api.sessionReady) return;
+    if (!_api.canSend) return;
     unawaited(() async {
       try {
         await _api.deleteTeam(id);
@@ -67,7 +67,7 @@ class SyncedPlayerRepository implements PlayerRepository {
   }
 
   Future<void> _push(Player p) async {
-    if (!_api.sessionReady) return;
+    if (!_api.canSend) return;
     try {
       await _api.putPlayer(p);
       await _state.clearDirty(SyncState.players, [p.id]);
@@ -78,7 +78,7 @@ class SyncedPlayerRepository implements PlayerRepository {
   Future<void> delete(String id) async {
     await _local.delete(id);
     await _state.markDeleted(SyncState.players, id);
-    if (!_api.sessionReady) return;
+    if (!_api.canSend) return;
     unawaited(() async {
       try {
         await _api.deletePlayer(id);
@@ -110,7 +110,7 @@ class SyncedMatchRepository implements MatchRepository {
 
   /// Full upsert of one match; returns whether it succeeded.
   Future<bool> putNow(CricketMatch m) async {
-    if (!_api.sessionReady) return false;
+    if (!_api.canSend) return false;
     try {
       await _api.putMatch(m);
       await _state.setServerHasMatch(m.id, true);
@@ -126,7 +126,7 @@ class SyncedMatchRepository implements MatchRepository {
     await _local.delete(id);
     await _state.markDeleted(SyncState.matches, id);
     await _state.setServerHasMatch(id, false);
-    if (!_api.sessionReady) return;
+    if (!_api.canSend) return;
     unawaited(() async {
       try {
         await _api.deleteMatch(id);

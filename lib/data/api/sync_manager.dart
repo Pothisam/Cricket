@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../../models/cricket_match.dart';
 import '../../models/player.dart';
@@ -42,6 +45,122 @@ class SyncManager extends ChangeNotifier {
   String? lastError;
   bool get signedIn => api.sessionReady;
 
+  // ------------------------------------------------------------ offline support
+  // Every change is written to the device first and marked as "waiting" (see SyncState). This part sends
+  // what is waiting as soon as the network is back: when the connection returns, when the app is opened
+  // again, and every 15 seconds while something is waiting (with a growing pause after a failure).
+
+  /// False while the device has no network.
+  bool online = true;
+
+  /// Changes (new / edited / deleted teams, players and matches) that are not on the server yet.
+  int get pendingCount =>
+      [SyncState.teams, SyncState.players, SyncState.matches]
+          .map((k) => state.dirty(k).length + state.deleted(k).length)
+          .fold(0, (a, b) => a + b);
+
+  /// Pause before the next automatic attempt after [failures] failed attempts in a row: 30 s, 1 min, ... 5 min.
+  static Duration backoff(int failures) =>
+      Duration(seconds: math.min(300, 15 * (1 << math.min(failures, 5))));
+
+  final Connectivity _connectivity = Connectivity();
+  StreamSubscription<List<ConnectivityResult>>? _connSub;
+  Timer? _timer;
+  _ResumeObserver? _observer;
+  String? _wantedUid; // the signed-in user whose session we keep alive
+  int _failures = 0;
+  DateTime? _nextAttempt;
+  int _lastPending = -1;
+
+  /// Start watching the network. Call once at app start.
+  void startMonitoring() {
+    if (_timer != null) return;
+    _connectivity.checkConnectivity().then(_onConnectivity).catchError((_) {});
+    _connSub = _connectivity.onConnectivityChanged.listen(_onConnectivity);
+    _observer = _ResumeObserver(() {
+      _failures = 0;
+      _nextAttempt = null;
+      unawaited(refreshDevice());
+      unawaited(_kick());
+    });
+    WidgetsBinding.instance.addObserver(_observer!);
+    _timer = Timer.periodic(const Duration(seconds: 15), (_) => _tick());
+  }
+
+  @override
+  void dispose() {
+    _connSub?.cancel();
+    _timer?.cancel();
+    if (_observer != null) WidgetsBinding.instance.removeObserver(_observer!);
+    super.dispose();
+  }
+
+  void _onConnectivity(List<ConnectivityResult> results) {
+    final now =
+        results.isNotEmpty &&
+        !results.every((r) => r == ConnectivityResult.none);
+    final was = online;
+    online = now;
+    api.online = now;
+    notifyListeners();
+    if (!was && now) {
+      _failures = 0;
+      _nextAttempt = null;
+      unawaited(_kick()); // the network is back: send what is waiting
+    }
+  }
+
+  void _tick() {
+    final pending = pendingCount;
+    if (pending != _lastPending) {
+      _lastPending = pending;
+      notifyListeners(); // keeps the "N changes waiting" counter fresh
+    }
+    final due = _nextAttempt == null || !DateTime.now().isBefore(_nextAttempt!);
+    if (online &&
+        due &&
+        _wantedUid != null &&
+        (pending > 0 || !api.sessionReady)) {
+      unawaited(_kick());
+    }
+  }
+
+  /// Tells the server about the current notification permission / token. The server only sends
+  /// pushes to devices that said "notifications enabled", so this must follow the phone's settings.
+  Future<void> refreshDevice({bool force = false}) async {
+    final n = NotificationService.instance;
+    final changed = await n.recheck();
+    if ((!changed && !force) || !api.canSend) return;
+    try {
+      await api.registerToken(
+        await devicePayload(
+          deviceId: deviceId,
+          fcmToken: n.token,
+          notificationsEnabled: n.enabled,
+        ),
+      );
+    } catch (_) {}
+  }
+
+  /// One automatic attempt: (re)start the session if it never started, otherwise sync.
+  Future<void> _kick() async {
+    final uid = _wantedUid;
+    if (uid == null || !online || syncing) return;
+    if (!api.sessionReady) {
+      _uid = null; // allow startSession to run again
+      await startSession(uid);
+    } else {
+      await syncAll();
+    }
+    if (lastError != null) {
+      _failures++;
+      _nextAttempt = DateTime.now().add(backoff(_failures));
+    } else {
+      _failures = 0;
+      _nextAttempt = null;
+    }
+  }
+
   /// Controllers register here so they refresh after a pull.
   void addReloader(Future<void> Function() reload) => _reloaders.add(reload);
 
@@ -54,6 +173,7 @@ class SyncManager extends ChangeNotifier {
   // ------------------------------------------------------------ session
   /// Call after every Firebase sign-in (and on app start when already signed in).
   Future<void> startSession(String uid) async {
+    _wantedUid = uid;
     if (_uid == uid) return; // already started / in progress
     _uid = uid;
     try {
@@ -119,6 +239,7 @@ class SyncManager extends ChangeNotifier {
       api.sessionReady = false;
     }
     _uid = null;
+    _wantedUid = null;
     notifyListeners();
   }
 
@@ -225,16 +346,27 @@ class SyncManager extends ChangeNotifier {
     final r = await api.syncPull(since: state.lastSync);
     var changed = false;
 
+    // Anything still waiting here is newer than the server's copy (it could not be sent, or it was
+    // changed while syncing): keep the local version and send it next time.
+    final waitingTeams = state.dirty(SyncState.teams);
+    final waitingPlayers = state.dirty(SyncState.players);
+    final waitingMatches = state.dirty(SyncState.matches);
+
     for (final j in r.teams) {
-      await _teams.save(Team.fromJson(j));
+      final t = Team.fromJson(j);
+      if (waitingTeams.contains(t.id)) continue;
+      await _teams.save(t);
       changed = true;
     }
     for (final j in r.players) {
-      await _players.save(Player.fromJson(j));
+      final p = Player.fromJson(j);
+      if (waitingPlayers.contains(p.id)) continue;
+      await _players.save(p);
       changed = true;
     }
     for (final j in r.matches) {
       final m = CricketMatch.fromJson(j);
+      if (waitingMatches.contains(m.id)) continue;
       await _matches.save(m);
       await state.setServerHasMatch(m.id, true);
       changed = true;
@@ -262,6 +394,7 @@ class SyncManager extends ChangeNotifier {
     await _tokenSub?.cancel();
     await state.resetForNewOwner();
     _uid = null;
+    _wantedUid = null;
     api.sessionReady = false;
     await _reload();
     notifyListeners();
@@ -287,5 +420,16 @@ class SyncManager extends ChangeNotifier {
     if (_uid != null) await state.setOwnerUid(_uid);
     await _reload();
     notifyListeners();
+  }
+}
+
+/// Tells the SyncManager when the app comes back to the foreground.
+class _ResumeObserver with WidgetsBindingObserver {
+  _ResumeObserver(this._onResume);
+  final VoidCallback _onResume;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _onResume();
   }
 }

@@ -67,6 +67,41 @@ class NotificationService {
     }
   }
 
+  /// Asks the user to allow notifications (Android 13+ shows a system prompt).
+  Future<bool> requestPermission() async {
+    if (kIsWeb) return false;
+    try {
+      final s = await FirebaseMessaging.instance.requestPermission();
+      enabled =
+          s.authorizationStatus == AuthorizationStatus.authorized ||
+          s.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (_) {}
+    return enabled;
+  }
+
+  /// Re-reads the permission (the user may have changed it in the phone settings) and
+  /// fetches the token again if it could not be read at start. Returns true if anything changed.
+  Future<bool> recheck() async {
+    if (kIsWeb) return false;
+    var changed = false;
+    try {
+      final fcm = FirebaseMessaging.instance;
+      final s = await fcm.getNotificationSettings();
+      final now =
+          s.authorizationStatus == AuthorizationStatus.authorized ||
+          s.authorizationStatus == AuthorizationStatus.provisional;
+      if (now != enabled) {
+        enabled = now;
+        changed = true;
+      }
+      if (token == null) {
+        token = await fcm.getToken();
+        changed = changed || token != null;
+      }
+    } catch (_) {}
+    return changed;
+  }
+
   Future<void> subscribeToTopic(String topic) async {
     if (kIsWeb) return;
     await FirebaseMessaging.instance.subscribeToTopic(topic);

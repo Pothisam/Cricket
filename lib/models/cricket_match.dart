@@ -94,6 +94,7 @@ class CricketMatch {
     'winnerId': winnerId,
     'resultText': resultText,
     'invitationId': invitationId,
+    'opponentUserId': opponentUserId,
   };
 
   factory CricketMatch.fromJson(Map<String, dynamic> j) => CricketMatch(

@@ -44,17 +44,43 @@ class TeamsController extends ChangeNotifier {
   List<Team> teamsOfPlayer(String playerId) =>
       teams.where((t) => t.playerIds.contains(playerId)).toList();
 
-  Future<Team> addTeam(String name, String shortName, int colorIndex) async {
+  Future<Team> addTeam(
+    String name,
+    String shortName,
+    int colorIndex, {
+    bool isPublic = false,
+  }) async {
     final t = Team(
       id: newId(),
       name: name.trim(),
       shortName: shortName.trim().toUpperCase(),
       colorIndex: colorIndex,
+      isPublic: isPublic,
     );
     teams.add(t);
     await _teamRepo.save(t);
     notifyListeners();
     return t;
+  }
+
+  /// A copy of [t] (same short name, colour and players) that is added below the others.
+  /// The copy is private, even if the original is public, and is named "<name> (copy)".
+  Future<Team> duplicateTeam(Team t) async {
+    const suffix = ' (copy)';
+    final base = t.name.length + suffix.length > 80
+        ? t.name.substring(0, 80 - suffix.length)
+        : t.name;
+    final copy = Team(
+      id: newId(),
+      name: '$base$suffix',
+      shortName: t.shortName,
+      colorIndex: t.colorIndex,
+      playerIds: [...t.playerIds],
+    );
+    teams.add(copy);
+    await _teamRepo.save(copy);
+    notifyListeners();
+    return copy;
   }
 
   Future<void> updateTeam(Team t) async {

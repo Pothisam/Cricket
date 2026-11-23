@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/sync_banner.dart';
 import 'matches_tab.dart';
 import 'more_tab.dart';
 import 'players_tab.dart';
@@ -28,31 +29,40 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _index, children: _tabs),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.sports_cricket_outlined),
-            selectedIcon: Icon(Icons.sports_cricket),
-            label: 'Matches',
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SyncBanner(),
+          NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.sports_cricket_outlined),
+                selectedIcon: Icon(Icons.sports_cricket),
+                label: 'Matches',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.groups_outlined),
+                selectedIcon: Icon(Icons.groups),
+                label: 'Teams',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Players',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.leaderboard_outlined),
+                selectedIcon: Icon(Icons.leaderboard),
+                label: 'Stats',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.more_horiz),
+                label: 'More',
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.groups_outlined),
-            selectedIcon: Icon(Icons.groups),
-            label: 'Teams',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Players',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.leaderboard_outlined),
-            selectedIcon: Icon(Icons.leaderboard),
-            label: 'Stats',
-          ),
-          NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
         ],
       ),
     );

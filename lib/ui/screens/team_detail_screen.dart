@@ -10,6 +10,7 @@ import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/match_card.dart';
 import '../widgets/pull_refresh.dart';
+import '../widgets/avatars.dart';
 import 'player_detail_screen.dart';
 import 'player_form.dart';
 import 'teams_tab.dart';
@@ -113,9 +114,7 @@ class TeamDetailScreen extends StatelessWidget {
               ),
             for (final p in players)
               ListTile(
-                leading: CircleAvatar(
-                  child: Text(p.name.isEmpty ? '?' : p.name[0].toUpperCase()),
-                ),
+                leading: PlayerAvatar(p),
                 title: Text(p.name),
                 subtitle: Text(p.role.label),
                 trailing: IconButton(

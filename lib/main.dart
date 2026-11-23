@@ -12,5 +12,7 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.instance.init();
   final prefs = await SharedPreferences.getInstance();
-  runApp(CricketApp(deps: AppDependencies.synced(prefs)));
+  final deps = AppDependencies.synced(prefs);
+  deps.sync?.startMonitoring(); // sync by itself when the network is back
+  runApp(CricketApp(deps: deps));
 }
