@@ -5,12 +5,16 @@ import '../../models/player.dart';
 import '../../models/team.dart';
 import '../../state/matches_controller.dart';
 import '../../state/teams_controller.dart';
+import '../../data/api/api_models.dart';
+import '../../data/api/cricket_api.dart';
+import '../../data/api/sync_manager.dart';
 import '../../data/app_dependencies.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/match_card.dart';
 import '../widgets/pull_refresh.dart';
 import '../widgets/avatars.dart';
+import '../widgets/squad_list.dart';
 import 'player_detail_screen.dart';
 import 'player_form.dart';
 import 'teams_tab.dart';
@@ -112,23 +116,7 @@ class TeamDetailScreen extends StatelessWidget {
                 padding: EdgeInsets.all(24),
                 child: Center(child: Text('No players in this team yet')),
               ),
-            for (final p in players)
-              ListTile(
-                leading: PlayerAvatar(p),
-                title: Text(p.name),
-                subtitle: Text(p.role.label),
-                trailing: IconButton(
-                  icon: const Icon(Icons.person_remove_outlined),
-                  tooltip: 'Remove from team',
-                  onPressed: () => tc.removeFromTeam(team, p.id),
-                ),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PlayerDetailScreen(playerId: p.id),
-                  ),
-                ),
-              ),
+            _OwnSquad(team: team, players: players),
             if (matches.isNotEmpty) ...[
               const SectionHeader('MATCHES'),
               for (final m in matches)
@@ -158,6 +146,10 @@ class TeamDetailScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.person_add_alt_1),
               title: const Text('Create new player'),
+              enabled: tc.canAddPlayer,
+              subtitle: tc.canAddPlayer
+                  ? Text('${tc.playersLeft} more can be added')
+                  : const Text(TeamsController.playerLimitMessage),
               onTap: () => Navigator.pop(ctx, 'new'),
             ),
             ListTile(
@@ -240,6 +232,135 @@ class _ExistingPlayersPickerState extends State<_ExistingPlayersPicker> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The squad of my own team. The menu of each player gives the roles: captain, vice-captain and
+/// admin (hand the team over to a registered player: they run it on their own phone, but cannot delete it).
+class _OwnSquad extends StatefulWidget {
+  const _OwnSquad({required this.team, required this.players});
+  final Team team;
+  final List<Player> players;
+
+  @override
+  State<_OwnSquad> createState() => _OwnSquadState();
+}
+
+class _OwnSquadState extends State<_OwnSquad> {
+  Set<String> _adminUserIds = {};
+  String? _loadedFor;
+
+  CricketApi? get _api => context.read<AppDependencies>().api;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdmins();
+  }
+
+  @override
+  void didUpdateWidget(_OwnSquad old) {
+    super.didUpdateWidget(old);
+    if (old.team.id != widget.team.id) _loadAdmins();
+  }
+
+  Future<void> _loadAdmins() async {
+    final api = _api;
+    if (api == null) return;
+    _loadedFor = widget.team.id;
+    try {
+      final list = await api.teamManagers(widget.team.id);
+      if (mounted && _loadedFor == widget.team.id) {
+        setState(() => _adminUserIds = {for (final m in list) m.userId});
+      }
+    } catch (_) {
+      // not on the server yet / offline: no admins to show
+    }
+  }
+
+  Future<void> _setAdmin(Player p, bool make) async {
+    final api = _api;
+    if (api == null || p.linkedUserId == null) return;
+    final sync = context.read<SyncManager>();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      List<TeamManagerInfo> list;
+      if (make) {
+        await sync.syncAll(); // the team and its squad have to be on the server
+        list = await api.addTeamManager(widget.team.id, p.linkedUserId!);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              '${p.name} is now an admin of ${widget.team.name}. They are notified.',
+            ),
+          ),
+        );
+      } else {
+        list = await api.removeTeamManager(widget.team.id, p.linkedUserId!);
+        messenger.showSnackBar(
+          SnackBar(content: Text('${p.name} is no longer an admin.')),
+        );
+      }
+      if (mounted)
+        setState(() => _adminUserIds = {for (final m in list) m.userId});
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(apiMessage(e))));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = context.read<TeamsController>();
+    final team = widget.team;
+    final hasApi = _api != null;
+    return SquadList(
+      entries: [
+        for (final p in widget.players)
+          SquadEntry(
+            id: p.id,
+            avatar: PlayerAvatar(p),
+            title: p.name,
+            subtitle: p.role.label,
+            captain: team.captainPlayerId == p.id,
+            vice: team.viceCaptainPlayerId == p.id,
+            owner: p.isSelf,
+            admin:
+                p.linkedUserId != null &&
+                _adminUserIds.contains(p.linkedUserId),
+            canBeAdmin: p.isRegistered && !p.isSelf,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PlayerDetailScreen(playerId: p.id),
+              ),
+            ),
+          ),
+      ],
+      onReorder: (a, b) => tc.moveInSquad(team, a, b),
+      onCaptain: (id, make) => tc.setCaptain(team, make ? id : null),
+      onVice: (id, make) => tc.setViceCaptain(team, make ? id : null),
+      onAdmin: hasApi
+          ? (id, make) =>
+                _setAdmin(widget.players.firstWhere((p) => p.id == id), make)
+          : null,
+      onRemove: (id) async {
+        final p = widget.players.firstWhere((x) => x.id == id);
+        await tc.removeFromTeam(team, id);
+        // an admin must be in the squad: take the access away with the player
+        if (p.linkedUserId != null &&
+            _adminUserIds.contains(p.linkedUserId) &&
+            hasApi) {
+          try {
+            final list = await _api!.removeTeamManager(
+              team.id,
+              p.linkedUserId!,
+            );
+            if (mounted)
+              setState(() => _adminUserIds = {for (final m in list) m.userId});
+          } catch (_) {}
+        }
+      },
     );
   }
 }

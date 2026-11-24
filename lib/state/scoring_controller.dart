@@ -176,4 +176,110 @@ class ScoringController extends ChangeNotifier {
     _live?.complete(match);
     return _commit();
   }
+
+  // ===================================================== changes during the match
+
+  /// Why [playerId] cannot be taken out of [teamId]'s playing XI (null = can be removed).
+  /// A player who already batted, bowled, was dismissed or fielded stays: the scorecard needs him.
+  String? removalBlockedReason(String teamId, String playerId) {
+    final xi = match.squad(teamId);
+    if (!xi.contains(playerId)) return 'Not in the playing XI';
+    if (xi.length <= 2) return 'A team needs at least 2 players';
+    for (final inn in match.innings) {
+      if (inn.strikerId == playerId || inn.nonStrikerId == playerId) {
+        return 'At the crease';
+      }
+      if (inn.bowlerId == playerId) return 'Bowling now';
+      for (final b in inn.balls) {
+        if (b.strikerId == playerId || b.nonStrikerId == playerId) {
+          return 'Has already batted';
+        }
+        if (b.bowlerId == playerId) return 'Has already bowled';
+        if (b.outPlayerId == playerId) return 'Was dismissed';
+        if (b.fielderId == playerId) return 'Took part in a dismissal';
+      }
+    }
+    // One player less is one wicket less: the batting side must not already be at that limit.
+    final newMax = (xi.length - 2).clamp(1, 10);
+    for (final inn in match.innings) {
+      if (inn.battingTeamId == teamId && inn.wickets >= newMax) {
+        return 'The innings would already be over';
+      }
+    }
+    return null;
+  }
+
+  /// Players of [teamId] that are in the match squad but may not be removed are shown
+  /// with [removalBlockedReason]. Returns false when nothing was changed.
+  Future<bool> removeFromXi(String teamId, String playerId) async {
+    if (!match.isLive || removalBlockedReason(teamId, playerId) != null) {
+      return false;
+    }
+    match.squad(teamId).remove(playerId);
+    match.playerNames.remove(playerId);
+    _live?.resync(match);
+    await _commit();
+    return true;
+  }
+
+  /// Adds a player to [teamId]'s playing XI during the match. [name] is kept in the match
+  /// so the scorecard stays readable. Returns false when the player is already playing.
+  Future<bool> addToXi(String teamId, String playerId, String name) async {
+    if (!match.isLive) return false;
+    if (match.teamAPlayers.contains(playerId) ||
+        match.teamBPlayers.contains(playerId)) {
+      return false;
+    }
+    match.squad(teamId).add(playerId);
+    match.playerNames[playerId] = name;
+    _live?.resync(match);
+    await _commit();
+    return true;
+  }
+
+  /// The fewest overs the match can be changed to: the overs already bowled in any innings.
+  int get minOvers {
+    var bowled = 0;
+    for (final inn in match.innings) {
+      final o = (inn.legalBalls + 5) ~/ 6;
+      if (o > bowled) bowled = o;
+    }
+    return bowled < 1 ? 1 : bowled;
+  }
+
+  /// Changes the number of overs of the match. Returns a short message about what happened, or null
+  /// if the value is not allowed.
+  ///
+  /// * more overs: an innings that ended only because the old limit was reached is opened again
+  /// * fewer overs: the innings (and the match, in the 2nd innings) ends if the new limit is reached
+  Future<String?> changeOvers(int newOvers) async {
+    if (!match.isLive || newOvers < minOvers || newOvers > 100) return null;
+    final old = match.overs;
+    if (newOvers == old) return 'The match is already $newOvers overs';
+    match.overs = newOvers;
+
+    var note = 'The match is now $newOvers overs';
+    final inn = match.currentInnings;
+    if (inn != null) {
+      final endedByOldLimit = inn.completed && inn.legalBalls >= old * 6;
+      if (endedByOldLimit && inn.legalBalls < newOvers * 6) {
+        inn.completed = false;
+        if (ScoringEngine.isInningsOver(match, inn)) {
+          inn.completed =
+              true; // still over for another reason (all out, target reached)
+        } else {
+          note = '$note. The innings carries on.';
+        }
+      } else if (!inn.completed && ScoringEngine.isInningsOver(match, inn)) {
+        ScoringEngine.completeInnings(match, inn);
+        note = match.isLive
+            ? '$note. The innings is over.'
+            : '$note. The match is over: ${match.resultText}';
+      }
+    }
+    _live?.resync(match);
+    if (!match.isLive) _live?.complete(match);
+    await _commit();
+    return note;
+  }
 }

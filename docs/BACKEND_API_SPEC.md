@@ -821,3 +821,18 @@ Implemented by `Database/CricketDB_Upgrade_003_MatchInvitations.sql`.
 Implemented by `Database/CricketDB_Upgrade_004_TeamVisibility.sql`: `teams.is_public BIT NOT NULL DEFAULT 0`. `TeamDto.isPublic` is read and written by `PUT /teams/{id}` and returned by team lists and sync. `GET /teams/search` only returns public teams of other users; `POST /match-invitations` only accepts a public opponent team. Private (default): only the owner sees the team; added players still see it in `GET /me/joined-teams`.
 
 `GET /players/{id}/teams`: other scorers' public teams in which one of my players (a registered user, discoverable) also plays. Used by the player screen's Teams tab.
+
+---
+
+## 18. Captain, handing a team over, team limit
+
+Implemented by `Database/CricketDB_Upgrade_005_TeamRolesAndManagers.sql`: `teams.captain_player_id`, `teams.vice_captain_player_id`, table `team_managers (owner_user_id, team_id, manager_user_id, created_at)`.
+
+- `TeamDto` carries `captainPlayerId` and `viceCaptainPlayerId` (must be in `playerIds`, otherwise cleared). The squad order is the order of `playerIds`.
+- Owner: `GET/POST /teams/{id}/managers`, `DELETE /teams/{id}/managers/{userId}` (max. 5).
+- Manager: `GET /me/managed-teams`, `GET|PUT /me/managed-teams/{ownerId}/{teamId}`, `POST .../players`, `DELETE ...` (give back). A manager cannot delete the team, change visibility, appoint managers or remove the creator.
+- Limit: 3 teams per user (1 public, 2 private), duplicates included; `LIMIT_REACHED` (403) on `PUT /teams/{id}` and in `POST /sync/push` `rejected[].reason`.
+
+Player limit: 50 players per user (`LIMIT_REACHED`, 403, for a new player on `PUT /players/{id}`, `POST /players/from-user`, `POST /sync/push`, and when an admin adds a player to the owner's list).
+
+`DELETE /me/joined-teams/{ownerId}/{teamId}`: leave a team somebody else added me to (removed from the squad, roles and admin access cleared, creator notified with `team_left`).

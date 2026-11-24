@@ -13,6 +13,9 @@ class MembershipController extends ChangeNotifier {
   List<JoinedTeam> teams = [];
   List<MatchSummary> matches = [];
 
+  /// Teams created by others that were handed over to me: I can run them.
+  List<ManagedTeam> managedTeams = [];
+
   /// Match challenges I sent or received (accepted ones are the scheduled matches).
   List<MatchInvitation> invitations = [];
   bool loading = false;
@@ -32,9 +35,11 @@ class MembershipController extends ChangeNotifier {
       final t = await api.joinedTeams();
       final m = await api.myMatches();
       final i = await api.invitations();
+      final mt = await api.managedTeams();
       teams = t;
       matches = m;
       invitations = i;
+      managedTeams = mt;
       error = null;
     } catch (e) {
       error = '$e';
@@ -72,6 +77,7 @@ class MembershipController extends ChangeNotifier {
     teams = [];
     matches = [];
     invitations = [];
+    managedTeams = [];
     notifyListeners();
   }
 }

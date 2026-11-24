@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../domain/stats_service.dart';
 import '../../state/matches_controller.dart';
+import '../../state/membership_controller.dart';
+import '../../state/team_membership.dart';
 import '../../state/teams_controller.dart';
 import '../../data/app_dependencies.dart';
 import '../widgets/cloud_actions.dart';
@@ -24,7 +26,11 @@ class PlayerDetailScreen extends StatelessWidget {
     final player = tc.playerById(playerId);
     if (player == null) return const Scaffold(body: SizedBox.shrink());
     final c = stats.player(playerId) ?? PlayerCareer(playerId, player.name);
-    final teams = tc.teamsOfPlayer(playerId);
+    final tm = TeamMembership.of(
+      player,
+      tc,
+      context.watch<MembershipController>(),
+    );
 
     return DefaultTabController(
       length: 4,
@@ -90,13 +96,15 @@ class PlayerDetailScreen extends StatelessWidget {
                           Text(player.battingStyle),
                           if (player.bowlingStyle != 'None')
                             Text(player.bowlingStyle),
-                          if (teams.isNotEmpty)
-                            Text(
-                              teams.map((t) => t.name).join(', '),
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                          Text(
+                            tm.line,
+                            style: TextStyle(
+                              color: tm.total == 0
+                                  ? null
+                                  : Theme.of(context).colorScheme.primary,
                             ),
+                          ),
+                          if (tm.breakdown.isNotEmpty) Text(tm.breakdown),
                         ],
                       ),
                     ),

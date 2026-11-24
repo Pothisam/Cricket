@@ -7,7 +7,9 @@ import '../../state/membership_controller.dart';
 import '../../state/teams_controller.dart';
 import '../widgets/common.dart';
 import '../widgets/pull_refresh.dart';
+import '../../state/team_membership.dart';
 import 'joined_screens.dart';
+import 'managed_team_screen.dart';
 import 'team_detail_screen.dart';
 
 class TeamsTab extends StatelessWidget {
@@ -17,13 +19,17 @@ class TeamsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final tc = context.watch<TeamsController>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Teams')),
-      floatingActionButton: FloatingActionButton.extended(
-        heroTag: null,
-        onPressed: () => showTeamForm(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Add team'),
+      appBar: AppBar(
+        title: Text('Teams (${tc.teams.length}/${TeamsController.maxTeams})'),
       ),
+      floatingActionButton: tc.canCreateTeam
+          ? FloatingActionButton.extended(
+              heroTag: null,
+              onPressed: () => showTeamForm(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add team'),
+            )
+          : null,
       body: PullToRefresh(
         child:
             (tc.teams.isEmpty &&
@@ -38,6 +44,17 @@ class TeamsTab extends StatelessWidget {
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
+                  const _MyTeamsSummaryCard(),
+                  if (!tc.canCreateTeam)
+                    Card(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: const ListTile(
+                        leading: Icon(Icons.info_outline),
+                        title: Text('Team limit reached'),
+                        subtitle: Text(TeamsController.limitMessage),
+                      ),
+                    ),
                   for (final t in tc.teams)
                     Card(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -53,26 +70,34 @@ class TeamsTab extends StatelessWidget {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              tooltip: 'Duplicate team',
-                              icon: const Icon(Icons.copy_all_outlined),
-                              onPressed: () async {
-                                final copy = await tc.duplicateTeam(t);
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context)
-                                  ..hideCurrentSnackBar()
-                                  ..showSnackBar(
-                                    SnackBar(
-                                      content: Text('Created "${copy.name}"'),
-                                      action: SnackBarAction(
-                                        label: 'Rename',
-                                        onPressed: () =>
-                                            showTeamForm(context, team: copy),
+                            if (tc.canCreateTeam)
+                              IconButton(
+                                tooltip: 'Duplicate team',
+                                icon: const Icon(Icons.copy_all_outlined),
+                                onPressed: () async {
+                                  final Team copy;
+                                  try {
+                                    copy = await tc.duplicateTeam(t);
+                                  } on TeamLimitException catch (e) {
+                                    if (context.mounted)
+                                      toast(context, e.message);
+                                    return;
+                                  }
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context)
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(
+                                      SnackBar(
+                                        content: Text('Created "${copy.name}"'),
+                                        action: SnackBarAction(
+                                          label: 'Rename',
+                                          onPressed: () =>
+                                              showTeamForm(context, team: copy),
+                                        ),
                                       ),
-                                    ),
-                                  );
-                              },
-                            ),
+                                    );
+                                },
+                              ),
                             const Icon(Icons.chevron_right),
                           ],
                         ),
@@ -84,6 +109,7 @@ class TeamsTab extends StatelessWidget {
                         ),
                       ),
                     ),
+                  const ManagedTeamsSection(),
                   const JoinedTeamsSection(),
                 ],
               ),
@@ -99,6 +125,7 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
   final short = TextEditingController(text: team?.shortName ?? '');
   var color = team?.colorIndex ?? tc.teams.length % teamColors.length;
   var isPublic = team?.isPublic ?? false;
+  String? limitError; // why the chosen visibility / a new team is not allowed
   final formKey = GlobalKey<FormState>();
   var shortEdited = team != null;
 
@@ -176,21 +203,46 @@ Future<void> showTeamForm(BuildContext context, {Team? team}) async {
                       : 'Only you can see this team.',
                 ),
                 value: isPublic,
-                onChanged: (v) => setState(() => isPublic = v),
+                onChanged: (v) {
+                  final blocked = team == null
+                      ? tc.creationBlockedReason(isPublic: v)
+                      : tc.visibilityBlockedReason(team, v);
+                  setState(() {
+                    if (blocked == null) {
+                      isPublic = v;
+                      limitError = null;
+                    } else {
+                      limitError = blocked; // the switch stays where it was
+                    }
+                  });
+                },
               ),
-              const SizedBox(height: 12),
+              if (limitError != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    limitError!,
+                    style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                  ),
+                ),
+              const SizedBox(height: 4),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () async {
                     if (!formKey.currentState!.validate()) return;
                     if (team == null) {
-                      await tc.addTeam(
-                        name.text,
-                        short.text,
-                        color,
-                        isPublic: isPublic,
-                      );
+                      try {
+                        await tc.addTeam(
+                          name.text,
+                          short.text,
+                          color,
+                          isPublic: isPublic,
+                        );
+                      } on TeamLimitException catch (e) {
+                        setState(() => limitError = e.message);
+                        return;
+                      }
                     } else {
                       team
                         ..name = name.text.trim()
@@ -224,4 +276,58 @@ String _abbr(String name) {
     return (w.length > 3 ? w.substring(0, 3) : w).toUpperCase();
   }
   return words.take(4).map((w) => w[0]).join().toUpperCase();
+}
+
+/// "You are in 5 teams": how many I created, administer, or was added to.
+class _MyTeamsSummaryCard extends StatelessWidget {
+  const _MyTeamsSummaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final sum = MyTeamsSummary(
+      context.watch<TeamsController>(),
+      context.watch<MembershipController>(),
+    );
+    final theme = Theme.of(context);
+    Widget chip(IconData icon, String text) => Chip(
+      avatar: Icon(icon, size: 16),
+      label: Text(text),
+      visualDensity: VisualDensity.compact,
+    );
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              sum.total == 1
+                  ? 'You are in 1 team'
+                  : 'You are in ${sum.total} teams',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                chip(Icons.star_outline, '${sum.created} created by you'),
+                if (sum.admin > 0)
+                  chip(
+                    Icons.admin_panel_settings_outlined,
+                    '${sum.admin} you are admin',
+                  ),
+                if (sum.addedBy > 0)
+                  chip(
+                    Icons.group_add_outlined,
+                    '${sum.addedBy} added by others',
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

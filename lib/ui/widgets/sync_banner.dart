@@ -22,6 +22,19 @@ class SyncBanner extends StatelessWidget {
 
   Widget _content(BuildContext context, SyncManager sync) {
     final cs = Theme.of(context).colorScheme;
+    if (sync.notice != null) {
+      return _strip(
+        context,
+        color: cs.errorContainer,
+        onColor: cs.onErrorContainer,
+        icon: Icons.info_outline,
+        text: sync.notice!,
+        action: TextButton(
+          onPressed: sync.clearNotice,
+          child: const Text('OK'),
+        ),
+      );
+    }
     final pending = sync.pendingCount;
     final waiting = pending == 1 ? '1 change' : '$pending changes';
 

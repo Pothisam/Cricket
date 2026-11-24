@@ -31,7 +31,9 @@ class CricketMatch {
   final String teamAId, teamBId;
   final String teamAName, teamBName;
   final String teamAShort, teamBShort;
-  final int overs;
+
+  /// Overs per innings. Can be changed while the match is live (ScoringController.changeOvers).
+  int overs;
   final String tossWinnerId;
   final bool electedToBat;
 

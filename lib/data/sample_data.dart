@@ -59,7 +59,13 @@ class SampleData {
     var color = 0;
     for (final e in _names.entries) {
       final short = e.key.split(' ').map((w) => w[0]).join();
-      final t = await tc.addTeam(e.key, short, color++ % 8);
+      // 1 public + 2 private teams, within the per-user team limit
+      final t = await tc.addTeam(
+        e.key,
+        short,
+        color++ % 8,
+        isPublic: color == 1,
+      );
       for (var i = 0; i < e.value.length; i++) {
         await tc.addPlayer(
           Player(

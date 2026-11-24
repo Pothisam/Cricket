@@ -41,6 +41,14 @@ class SyncManager extends ChangeNotifier {
   String? _uid;
 
   bool syncing = false;
+
+  /// A message the user has to read, for example a team the server refused because of the limit.
+  String? notice;
+  void clearNotice() {
+    notice = null;
+    notifyListeners();
+  }
+
   DateTime? lastSyncedAt;
   String? lastError;
   bool get signedIn => api.sessionReady;
@@ -301,6 +309,7 @@ class SyncManager extends ChangeNotifier {
     );
 
     final rejected = <String, Set<String>>{};
+    var needsReload = false;
     for (final r in (res['rejected'] as List? ?? const [])) {
       final m = Map<String, dynamic>.from(r as Map);
       final kind = switch (m['type']) {
@@ -308,6 +317,31 @@ class SyncManager extends ChangeNotifier {
         'player' => SyncState.players,
         _ => SyncState.matches,
       };
+      if (m['reason'] == 'LIMIT_REACHED' &&
+          (kind == SyncState.teams || kind == SyncState.players)) {
+        // The server refused this item (3 teams, or 50 players). Make this device agree with it.
+        final id = m['id'] as String;
+        final isTeam = kind == SyncState.teams;
+        try {
+          // an existing item keeps the server's version
+          if (isTeam) {
+            await _teams.save(await api.team(id));
+          } else {
+            await _players.save(await api.player(id));
+          }
+        } catch (_) {
+          // a new item that never made it
+          if (isTeam) {
+            await _teams.delete(id);
+          } else {
+            await _players.delete(id);
+          }
+        }
+        notice =
+            '${m['message'] ?? 'A limit was reached'} The ${isTeam ? 'team' : 'player'} was not saved.';
+        needsReload = true;
+        continue;
+      }
       if (m['reason'] == 'FORBIDDEN' && kind == SyncState.players) {
         // e.g. a registered user's player edited on this device: the server's copy wins.
         try {
@@ -340,6 +374,7 @@ class SyncManager extends ChangeNotifier {
         await state.setServerHasMatch(m.id, true);
       }
     }
+    if (needsReload) await _reload();
   }
 
   Future<void> _pull() async {

@@ -116,12 +116,101 @@ class CricketApi {
       JoinedTeam.fromJson(j),
   ];
 
+  // ------------------------------------------------------------ hand a team over
+  /// Users my team was handed over to (owner only).
+  Future<List<TeamManagerInfo>> teamManagers(String teamId) async => [
+    for (final j in _items(await client.get('/teams/$teamId/managers')))
+      TeamManagerInfo.fromJson(j),
+  ];
+
+  /// Hand the team over to [userId]: it appears on their device and they can run it (not delete it).
+  Future<List<TeamManagerInfo>> addTeamManager(
+    String teamId,
+    String userId,
+  ) async => [
+    for (final j in _items(
+      await client.post('/teams/$teamId/managers', body: {'userId': userId}),
+    ))
+      TeamManagerInfo.fromJson(j),
+  ];
+
+  Future<List<TeamManagerInfo>> removeTeamManager(
+    String teamId,
+    String userId,
+  ) async => [
+    for (final j in _items(
+      await client.delete('/teams/$teamId/managers/$userId'),
+    ))
+      TeamManagerInfo.fromJson(j),
+  ];
+
+  /// Teams that were handed over to me.
+  Future<List<ManagedTeam>> managedTeams() async => [
+    for (final j in _items(await client.get('/me/managed-teams')))
+      ManagedTeam.fromJson(j),
+  ];
+
+  Future<ManagedTeam> managedTeam(String ownerId, String teamId) async =>
+      ManagedTeam.fromJson(
+        _map(await client.get('/me/managed-teams/$ownerId/$teamId')),
+      );
+
+  /// Change a team I manage: name, colour, the squad in batting order, captain, vice-captain.
+  Future<ManagedTeam> updateManagedTeam(
+    String ownerId,
+    String teamId, {
+    required String name,
+    required String shortName,
+    required int colorIndex,
+    required List<String> playerIds,
+    String? captainPlayerId,
+    String? viceCaptainPlayerId,
+  }) async => ManagedTeam.fromJson(
+    _map(
+      await client.put(
+        '/me/managed-teams/$ownerId/$teamId',
+        body: {
+          'name': name,
+          'shortName': shortName,
+          'colorIndex': colorIndex,
+          'playerIds': playerIds,
+          'captainPlayerId': captainPlayerId,
+          'viceCaptainPlayerId': viceCaptainPlayerId,
+        },
+      ),
+    ),
+  );
+
+  /// Add somebody to a team I manage: a registered user ([userId]) or a new player ([name]).
+  Future<ManagedTeam> addManagedPlayer(
+    String ownerId,
+    String teamId, {
+    String? userId,
+    String? name,
+    String? role,
+  }) async => ManagedTeam.fromJson(
+    _map(
+      await client.post(
+        '/me/managed-teams/$ownerId/$teamId/players',
+        body: {'userId': userId, 'name': name, 'role': role},
+      ),
+    ),
+  );
+
+  /// Stop managing a team (give it back).
+  Future<void> leaveManagedTeam(String ownerId, String teamId) =>
+      client.delete('/me/managed-teams/$ownerId/$teamId');
+
   // ------------------------------------------------------ teams / matches I belong to
   /// Teams created by others in which I was added as a player.
   Future<List<JoinedTeam>> joinedTeams() async => [
     for (final j in _items(await client.get('/me/joined-teams')))
       JoinedTeam.fromJson(j),
   ];
+
+  /// Leave a team somebody else added me to: I disappear from its squad and the creator is told.
+  Future<void> leaveJoinedTeam(String ownerId, String teamId) =>
+      client.delete('/me/joined-teams/$ownerId/$teamId');
 
   /// One of those teams with its squad (public player details only).
   Future<JoinedTeam> joinedTeam(String ownerId, String teamId) async =>

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/ids.dart';
 import '../../domain/innings_summary.dart';
 import '../../models/ball_event.dart';
+import '../../models/player.dart';
 import '../../data/app_dependencies.dart';
 import '../../state/matches_controller.dart';
 import '../../state/scoring_controller.dart';
+import '../../state/teams_controller.dart';
 import '../widgets/common.dart';
 import '../widgets/shot_direction_picker.dart';
 import 'match_detail_screen.dart';
@@ -369,6 +372,108 @@ class _ScoringBodyState extends State<_ScoringBody> {
     MaterialPageRoute(builder: (_) => MatchDetailScreen(matchId: c.match.id)),
   );
 
+  Future<void> _addPlayer(ScoringController c) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => ChangeNotifierProvider.value(
+      value: c,
+      child: _AddPlayerSheet(controller: c),
+    ),
+  );
+
+  Future<void> _removePlayer(ScoringController c) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => ChangeNotifierProvider.value(
+      value: c,
+      child: _RemovePlayerSheet(controller: c),
+    ),
+  );
+
+  /// Change the number of overs while the match is on.
+  Future<void> _changeOvers(ScoringController c) async {
+    final m = c.match;
+    final min = c.minOvers;
+    final text = TextEditingController(text: '${m.overs}');
+    String? error;
+    final value = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          void step(int d) {
+            final n = (int.tryParse(text.text) ?? m.overs) + d;
+            text.text = '${n.clamp(min, 100)}';
+            setState(() => error = null);
+          }
+
+          return AlertDialog(
+            title: const Text('Change overs'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('The match is ${m.overs} overs per innings now.'),
+                if (min > 1)
+                  Text('At least $min: that many overs are already bowled.'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    IconButton.filledTonal(
+                      onPressed: () => step(-1),
+                      icon: const Icon(Icons.remove),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: text,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Overs'),
+                      ),
+                    ),
+                    IconButton.filledTonal(
+                      onPressed: () => step(1),
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      error!,
+                      style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final n = int.tryParse(text.text.trim());
+                  if (n == null || n < min || n > 100) {
+                    setState(() => error = 'Enter a number from $min to 100');
+                    return;
+                  }
+                  Navigator.pop(ctx, n);
+                },
+                child: const Text('Change'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (value == null || !mounted) return;
+    final note = await c.changeOvers(value);
+    if (mounted && note != null) toast(context, note);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.watch<ScoringController>();
@@ -391,6 +496,12 @@ class _ScoringBodyState extends State<_ScoringBody> {
               switch (v) {
                 case 'swap':
                   await c.swapStrike();
+                case 'addPlayer':
+                  await _addPlayer(c);
+                case 'removePlayer':
+                  await _removePlayer(c);
+                case 'overs':
+                  await _changeOvers(c);
                 case 'endInnings':
                   if (await confirm(
                     context,
@@ -414,6 +525,37 @@ class _ScoringBodyState extends State<_ScoringBody> {
             itemBuilder: (_) => [
               if (c.canScore)
                 const PopupMenuItem(value: 'swap', child: Text('Swap batters')),
+              if (m.isLive) ...[
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'addPlayer',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.person_add_alt_1),
+                    title: Text('Add player'),
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'removePlayer',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.person_remove_outlined),
+                    title: Text('Remove player'),
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'overs',
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.timer_outlined),
+                    title: Text('Change overs (${m.overs})'),
+                  ),
+                ),
+                const PopupMenuDivider(),
+              ],
               if (m.isLive && !inn.completed)
                 const PopupMenuItem(
                   value: 'endInnings',
@@ -849,6 +991,238 @@ class _ScoringBodyState extends State<_ScoringBody> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Adds a player to the playing XI of one of the two teams while the match is live: somebody from the
+/// team's squad who is not playing yet, or a brand-new player by name.
+class _AddPlayerSheet extends StatefulWidget {
+  const _AddPlayerSheet({required this.controller});
+  final ScoringController controller;
+
+  @override
+  State<_AddPlayerSheet> createState() => _AddPlayerSheetState();
+}
+
+class _AddPlayerSheetState extends State<_AddPlayerSheet> {
+  late String _teamId = widget.controller.innings.battingTeamId;
+  final _name = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  ScoringController get _c => widget.controller;
+
+  Future<void> _add(String id, String name, {String? note}) async {
+    final ok = await _c.addToXi(_teamId, id, name);
+    if (!mounted) return;
+    Navigator.pop(context);
+    toast(
+      context,
+      ok
+          ? '$name added to ${_c.match.teamName(_teamId)}${note ?? ''}'
+          : '$name is already playing',
+    );
+  }
+
+  Future<void> _addNew() async {
+    final name = _name.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = 'Enter a name');
+      return;
+    }
+    final tc = context.read<TeamsController>();
+    final team = tc.teamById(_teamId);
+    if (team == null) {
+      // The team belongs to another scorer: the new player only exists in this match.
+      await _add(newId(), name, note: ' (this match only)');
+      return;
+    }
+    try {
+      final p = await tc.addPlayer(
+        Player(id: newId(), name: name),
+        team: team,
+      );
+      await _add(p.id, p.name, note: ' and to the team');
+    } on PlayerLimitException {
+      await _add(
+        newId(),
+        name,
+        note: ' (this match only, your player list is full)',
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tc = context.watch<TeamsController>();
+    final m = _c.match;
+    final team = tc.teamById(_teamId);
+    final playing = {...m.teamAPlayers, ...m.teamBPlayers};
+    final bench = team == null
+        ? const <Player>[]
+        : tc.playersOf(team).where((p) => !playing.contains(p.id)).toList();
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      builder: (_, scroll) => ListView(
+        controller: scroll,
+        padding: EdgeInsets.fromLTRB(
+          16,
+          0,
+          16,
+          MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        children: [
+          Text('Add a player', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(value: m.teamAId, label: Text(m.teamAShort)),
+              ButtonSegment(value: m.teamBId, label: Text(m.teamBShort)),
+            ],
+            selected: {_teamId},
+            onSelectionChanged: (s) => setState(() => _teamId = s.first),
+          ),
+          const SectionHeader('NEW PLAYER'),
+          TextField(
+            controller: _name,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              labelText: 'Name',
+              errorText: _error,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: _addNew,
+              ),
+            ),
+            onSubmitted: (_) => _addNew(),
+          ),
+          if (team == null)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text(
+                'This team belongs to another scorer, so a new player is added to this match only.',
+              ),
+            ),
+          if (team != null) ...[
+            SectionHeader('FROM ${team.name.toUpperCase()}'),
+            if (bench.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Everybody in this team is already playing.'),
+              ),
+            for (final p in bench)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.person_outline),
+                title: Text(p.name),
+                subtitle: Text(p.role.label),
+                trailing: FilledButton.tonal(
+                  onPressed: () => _add(p.id, p.name),
+                  child: const Text('Add'),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Takes a player out of the playing XI. Somebody who already batted, bowled or was dismissed has to stay,
+/// and the reason is shown.
+class _RemovePlayerSheet extends StatefulWidget {
+  const _RemovePlayerSheet({required this.controller});
+  final ScoringController controller;
+
+  @override
+  State<_RemovePlayerSheet> createState() => _RemovePlayerSheetState();
+}
+
+class _RemovePlayerSheetState extends State<_RemovePlayerSheet> {
+  late String _teamId = widget.controller.innings.battingTeamId;
+
+  ScoringController get _c => widget.controller;
+
+  Future<void> _remove(String id) async {
+    final m = _c.match;
+    final name = m.playerName(id);
+    if (!await confirm(
+      context,
+      'Remove $name?',
+      '$name is taken out of the playing XI of ${m.teamName(_teamId)} for this match.',
+      action: 'Remove',
+    )) {
+      return;
+    }
+    final ok = await _c.removeFromXi(_teamId, id);
+    if (!mounted) return;
+    setState(() {});
+    toast(context, ok ? '$name removed' : 'Could not remove $name');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    context.watch<ScoringController>();
+    final m = _c.match;
+    final xi = m.squad(_teamId);
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.75,
+      builder: (_, scroll) => ListView(
+        controller: scroll,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [
+          Text(
+            'Remove a player',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(value: m.teamAId, label: Text(m.teamAShort)),
+              ButtonSegment(value: m.teamBId, label: Text(m.teamBShort)),
+            ],
+            selected: {_teamId},
+            onSelectionChanged: (s) => setState(() => _teamId = s.first),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${xi.length} in the playing XI',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          for (final id in xi)
+            Builder(
+              builder: (context) {
+                final reason = _c.removalBlockedReason(_teamId, id);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.person_outline),
+                  title: Text(m.playerName(id)),
+                  subtitle: reason == null ? null : Text(reason),
+                  trailing: reason == null
+                      ? IconButton(
+                          tooltip: 'Remove from the match',
+                          icon: const Icon(Icons.person_remove_outlined),
+                          onPressed: () => _remove(id),
+                        )
+                      : Icon(
+                          Icons.lock_outline,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 }

@@ -83,6 +83,10 @@ class _PlayerSearchScreenState extends State<PlayerSearchScreen> {
 
   Future<void> _add(PlayerSearchItem item) async {
     final id = item.userId!;
+    if (!context.read<TeamsController>().canAddPlayer) {
+      toast(context, TeamsController.playerLimitMessage);
+      return;
+    }
     final sync = context.read<SyncManager>();
     setState(() => _adding.add(id));
     try {

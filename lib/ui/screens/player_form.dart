@@ -30,6 +30,14 @@ Future<void> showPlayerForm(
     return;
   }
   final tc = context.read<TeamsController>();
+  if (player == null && !tc.canAddPlayer) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(content: Text(TeamsController.playerLimitMessage)),
+      );
+    return;
+  }
   final name = TextEditingController(text: player?.name ?? '');
   final email = TextEditingController(text: player?.email ?? '');
   final city = TextEditingController(text: player?.city ?? '');

@@ -10,6 +10,7 @@ import '../../state/membership_controller.dart';
 import '../widgets/cloud_actions.dart';
 import '../widgets/common.dart';
 import '../widgets/scorecard_view.dart';
+import '../widgets/squad_list.dart';
 import '../widgets/avatars.dart';
 
 String _roleLabel(String name) => PlayerRole.values
@@ -77,8 +78,8 @@ class _JoinedTeamScreenState extends State<JoinedTeamScreen> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     subtitle: Text(
-                      'Managed by ${t.ownerName ?? 'another scorer'}\n'
-                      'You are a player in this team. Only the scorer can change it.',
+                      'Created by ${t.ownerName ?? 'another scorer'}\n'
+                      'You are a player in this team. Only its creator and admins can change it.',
                     ),
                     isThreeLine: true,
                   ),
@@ -96,7 +97,17 @@ class _JoinedTeamScreenState extends State<JoinedTeamScreen> {
                               name: m.name,
                             )
                           : UserAvatar(name: m.name, photoUrl: m.photoUrl),
-                      title: Text(m.isMe ? '${m.name} (you)' : m.name),
+                      title: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 2,
+                        children: [
+                          Text(m.isMe ? '${m.name} (you)' : m.name),
+                          if (m.isOwner) const RoleBadge(RoleKind.owner),
+                          if (m.isCaptain) const RoleBadge(RoleKind.captain),
+                          if (m.isViceCaptain) const RoleBadge(RoleKind.vice),
+                        ],
+                      ),
                       subtitle: Text(
                         [
                           _roleLabel(m.role),
@@ -113,7 +124,20 @@ class _JoinedTeamScreenState extends State<JoinedTeamScreen> {
                     ),
                   if (matches.isNotEmpty) const SectionHeader('MATCHES'),
                   for (final m in matches) JoinedMatchCard(m),
-                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final left = await leaveJoinedTeam(context, t);
+                        if (left && context.mounted) Navigator.pop(context);
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Leave this team'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
                 ],
               ),
       ),
@@ -277,7 +301,28 @@ class JoinedTeamsSection extends StatelessWidget {
               subtitle: Text(
                 'by ${t.ownerName ?? 'another scorer'} · ${t.playerCount} players',
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PopupMenuButton<String>(
+                    tooltip: 'Team options',
+                    onSelected: (_) => leaveJoinedTeam(context, t),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        value: 'leave',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, size: 20),
+                            SizedBox(width: 12),
+                            Text('Leave this team'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => JoinedTeamScreen(team: t)),
@@ -304,5 +349,32 @@ class JoinedMatchesSection extends StatelessWidget {
           JoinedMatchCard(m, margin: const EdgeInsets.only(bottom: 10)),
       ],
     );
+  }
+}
+
+/// Leave a team somebody else added me to. Asks first; the creator is told. Returns true when I left.
+Future<bool> leaveJoinedTeam(BuildContext context, JoinedTeam team) async {
+  final api = context.read<AppDependencies>().api;
+  if (api == null) return false;
+  final ms = context.read<MembershipController>();
+  final messenger = ScaffoldMessenger.of(context);
+  final owner = team.ownerName ?? 'The creator';
+  if (!await confirm(
+    context,
+    'Leave ${team.name}?',
+    'You will no longer be in this team and it disappears from your list. $owner is told that you left. '
+        'They can add you again later.',
+    action: 'Leave team',
+  )) {
+    return false;
+  }
+  try {
+    await api.leaveJoinedTeam(team.ownerId, team.teamId);
+    await ms.load();
+    messenger.showSnackBar(SnackBar(content: Text('You left ${team.name}')));
+    return true;
+  } catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text(apiMessage(e))));
+    return false;
   }
 }

@@ -363,6 +363,9 @@ class SquadMember {
       photoUrl = j['photoUrl'] as String?,
       isRegistered = j['isRegistered'] as bool? ?? false,
       isMe = j['isMe'] as bool? ?? false,
+      isCaptain = j['isCaptain'] as bool? ?? false,
+      isViceCaptain = j['isViceCaptain'] as bool? ?? false,
+      isOwner = j['isOwner'] as bool? ?? false,
       playerId = j['playerId'] as String? ?? '';
 
   /// Id in the squad owner's player list.
@@ -370,6 +373,9 @@ class SquadMember {
   final String name, role, battingStyle, bowlingStyle;
   final String? photoUrl;
   final bool isRegistered, isMe;
+
+  /// Roles in this team.
+  final bool isCaptain, isViceCaptain, isOwner;
 }
 
 /// A team of another user found by name (`GET /teams/search`).
@@ -459,4 +465,71 @@ class TestPushResult {
       null => 'The push could not be delivered.',
     };
   }
+}
+
+/// A user a team was handed over to (`GET /teams/{id}/managers`).
+class TeamManagerInfo {
+  TeamManagerInfo.fromJson(Map<String, dynamic> j)
+    : userId = j['userId'] as String,
+      name = j['name'] as String?,
+      photoUrl = j['photoUrl'] as String?,
+      email = j['email'] as String?;
+  final String userId;
+  final String? name, photoUrl, email;
+}
+
+class ManagedMember {
+  ManagedMember.fromJson(Map<String, dynamic> j)
+    : playerId = j['playerId'] as String,
+      name = j['name'] as String? ?? '',
+      role = j['role'] as String? ?? 'batter',
+      battingStyle = j['battingStyle'] as String? ?? '',
+      bowlingStyle = j['bowlingStyle'] as String? ?? '',
+      photoUrl = j['photoUrl'] as String?,
+      isRegistered = j['isRegistered'] as bool? ?? false,
+      isOwner = j['isOwner'] as bool? ?? false,
+      isAdmin = j['isAdmin'] as bool? ?? false,
+      isMe = j['isMe'] as bool? ?? false;
+  final String playerId, name, role, battingStyle, bowlingStyle;
+  final String? photoUrl;
+  final bool isRegistered;
+
+  /// The creator of the team: a manager cannot remove them.
+  final bool isOwner;
+
+  /// An admin of the team (a registered player the team was handed over to).
+  final bool isAdmin;
+
+  /// This player is me.
+  final bool isMe;
+}
+
+/// A team handed over to me (`/me/managed-teams`): I can run it, only the creator can delete it.
+class ManagedTeam {
+  ManagedTeam.fromJson(Map<String, dynamic> j)
+    : ownerId = j['ownerId'] as String,
+      ownerName = j['ownerName'] as String?,
+      teamId = j['teamId'] as String,
+      name = j['name'] as String? ?? '',
+      shortName = j['shortName'] as String? ?? '',
+      colorIndex = (j['colorIndex'] as num?)?.toInt() ?? 0,
+      isPublic = j['isPublic'] as bool? ?? false,
+      captainPlayerId = j['captainPlayerId'] as String?,
+      viceCaptainPlayerId = j['viceCaptainPlayerId'] as String?,
+      playerCount = (j['playerCount'] as num?)?.toInt() ?? 0,
+      squad = [
+        for (final m in (j['squad'] as List? ?? const []))
+          ManagedMember.fromJson(Map<String, dynamic>.from(m as Map)),
+      ],
+      roster = [
+        for (final m in (j['roster'] as List? ?? const []))
+          ManagedMember.fromJson(Map<String, dynamic>.from(m as Map)),
+      ];
+  final String ownerId, teamId, name, shortName;
+  final String? ownerName, captainPlayerId, viceCaptainPlayerId;
+  final int colorIndex, playerCount;
+  final bool isPublic;
+
+  /// Filled by the detail call only.
+  final List<ManagedMember> squad, roster;
 }
